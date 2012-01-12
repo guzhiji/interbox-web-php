@@ -22,7 +22,7 @@ class BoxModel extends UIModel {
     protected $_cacheExpire;
     protected $_cacheCategory;
     protected $_cacheKey;
-    protected $_cacheForce;
+    protected $_cacheVersion;
     protected $_classname;
 
     function __construct($t) {
@@ -85,8 +85,8 @@ class BoxModel extends UIModel {
         $this->_cachePath = "";
         $this->_cacheCategory = "";
         $this->_cacheKey = "";
-        $this->_cacheExpire = -1;
-        $this->_cacheForce = FALSE;
+        $this->_cacheExpire = 0;
+        $this->_cacheVersion = 0;
     }
 
     public function DataBind() {
@@ -97,20 +97,25 @@ class BoxModel extends UIModel {
 
         $this->DataBind();
 
-        $html = $this->TransformTpl($this->_tplName, array(
-            "Width" => $this->_width,
-            "Height" => $this->_height,
-            "Title" => $this->_title,
-            "Content" => $this->_content,
-            "Padding" => $this->_padding,
-            "Align" => $this->_align,
-            "VAlign" => $this->_valign
-                ), $this->_classname);
+        $html = "";
+        if ($this->_tplName != "") {
+            $html = TransformTpl($this->_tplName, array(
+                "Width" => $this->_width,
+                "Height" => $this->_height,
+                "Title" => $this->_title,
+                "Content" => $this->_content,
+                "Padding" => $this->_padding,
+                "Align" => $this->_align,
+                "VAlign" => $this->_valign
+                    ), __CLASS__, NULL, "neutral");
+        } else {
+            $html = $this->_content;
+        }
 
         if (!empty($this->_cacheCategory)) {
 
-            $ce = new PHPCacheEditor($this->_cachePath, $this->_cacheCategory);
-            $ce->SetValue($this->_cacheKey, $html, $this->_cacheExpire);
+            $ce = new PHPCacheEditor(GetCachePath(TRUE), $this->_cacheCategory);
+            $ce->SetValue($this->_cacheKey, $html, $this->_cacheExpire, $this->_cacheVersion > 0);
             $ce->Save();
         }
 
@@ -124,7 +129,7 @@ class BoxModel extends UIModel {
 
             $cr = new PHPCacheReader($this->_cachePath, $this->_cacheCategory);
             $cr->SetRefreshFunction(array($this, "GetRefreshedHTML"));
-            return $cr->GetValue($this->_cacheKey, $this->_cacheForce);
+            return $cr->GetValue($this->_cacheKey, $this->_cacheVersion);
         } else {
             $this->GetRefreshedHTML();
         }
