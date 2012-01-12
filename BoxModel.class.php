@@ -99,7 +99,7 @@ class BoxModel extends UIModel {
 
         $html = "";
         if ($this->_tplName != "") {
-            $html = TransformTpl($this->_tplName, array(
+            $html = $this->TransformTpl($this->_tplName, array(
                 "Width" => $this->_width,
                 "Height" => $this->_height,
                 "Title" => $this->_title,
@@ -107,7 +107,7 @@ class BoxModel extends UIModel {
                 "Padding" => $this->_padding,
                 "Align" => $this->_align,
                 "VAlign" => $this->_valign
-                    ), __CLASS__, NULL, "neutral");
+                    ), $this->_classname);
         } else {
             $html = $this->_content;
         }
