@@ -2,7 +2,7 @@
 
 /**
  * a box container model
- * @version 0.4.20120109
+ * @version 0.5.20120112
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2012 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.uimodel
@@ -22,6 +22,7 @@ class BoxModel extends UIModel {
     protected $_cacheExpire;
     protected $_cacheCategory;
     protected $_cacheKey;
+    protected $_cacheForce;
     protected $_classname;
 
     function __construct($t) {
@@ -85,44 +86,48 @@ class BoxModel extends UIModel {
         $this->_cacheCategory = "";
         $this->_cacheKey = "";
         $this->_cacheExpire = -1;
+        $this->_cacheForce = FALSE;
     }
 
     public function DataBind() {
         //to be over ridden
     }
 
+    private function GetRefreshedHTML() {
+
+        $this->DataBind();
+
+        $html = $this->TransformTpl($this->_tplName, array(
+            "Width" => $this->_width,
+            "Height" => $this->_height,
+            "Title" => $this->_title,
+            "Content" => $this->_content,
+            "Padding" => $this->_padding,
+            "Align" => $this->_align,
+            "VAlign" => $this->_valign
+                ), $this->_classname);
+
+        if (!empty($this->_cacheCategory)) {
+
+            $ce = new PHPCacheEditor($this->_cachePath, $this->_cacheCategory);
+            $ce->SetValue($this->_cacheKey, $html, $this->_cacheExpire);
+            $ce->Save();
+        }
+
+        return $html;
+    }
+
     public function GetHTML() {
 
-        $html = "";
         $this->CacheBind();
         if (!empty($this->_cacheCategory)) {
 
             $cr = new PHPCacheReader($this->_cachePath, $this->_cacheCategory);
-
-            $html = $cr->GetValue($this->_cacheKey);
+            $cr->SetRefreshFunction(array($this, "GetRefreshedHTML"));
+            return $cr->GetValue($this->_cacheKey, $this->_cacheForce);
+        } else {
+            $this->GetRefreshedHTML();
         }
-
-        if (empty($html)) {
-            $this->DataBind();
-
-            $html = $this->TransformTpl($this->_tplName, array(
-                "Width" => $this->_width,
-                "Height" => $this->_height,
-                "Title" => $this->_title,
-                "Content" => $this->_content,
-                "Padding" => $this->_padding,
-                "Align" => $this->_align,
-                "VAlign" => $this->_valign
-                    ), $this->_classname);
-
-            if (!empty($this->_cacheCategory)) {
-
-                $ce = new PHPCacheEditor($this->_cachePath, $this->_cacheCategory);
-                $ce->SetValue($this->_cacheKey, $html, $this->_cacheExpire);
-                $ce->Save();
-            }
-        }
-        return $html;
     }
 
 }
