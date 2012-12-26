@@ -1,13 +1,14 @@
 <?php
 
 /**
- * a generic model for a table, based on a simple php string template
+ * A generic template model for a table, based on a simple php string template.
+ * 
  * @version 0.4.20120109
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2012 InterBox Core 1.2 for PHP, GuZhiji Studio
- * @package interbox.core.uimodel
+ * @package interbox.core.framework
  */
-class TableModel extends UIModel {
+class TableModel {
 
     /**
      * number of columns
@@ -59,13 +60,13 @@ class TableModel extends UIModel {
     protected $_classname;
 
     /**
-     * buffer for the table
+     * stores HTML for the table
      * @var string 
      */
     private $_table;
 
     /**
-     * buffer for a new row
+     * stores HTML for a new row
      * @var string
      */
     private $_row;
@@ -76,47 +77,51 @@ class TableModel extends UIModel {
      * @param string $rowTplName    name of the template for a row
      * @param string $tableTplName  name of the template for the table
      * @param int $coln     maximum number of columns
+     * @param string $classname     optional, name of the extended class 
+     * (using __CLASS__); if not specified, use "TableModel"
      * @see $_itemtpl
      * @see $_rowtpl
      * @see $_tabletpl
      * @see $_coln
      */
-    function __construct($itemTplName, $rowTplName, $tableTplName, $coln) {
+    function __construct($itemTplName, $rowTplName, $tableTplName, $coln, $classname = NULL) {
+        if (empty($classname))
+            $classname = __CLASS__;
         $this->_coln = intval($coln);
         if ($this->_coln < 1)
             $this->_coln = 1;
         $this->_rown = 0;
         $this->_itemcount = 0;
-        $this->_table = "";
-        $this->_row = "";
-        $this->_itemempty = "";
-        $this->_itemrest = "";
-        $this->_itemtpl = $this->GetTemplate($itemTplName);
-        $this->_rowtpl = $this->GetTemplate($rowTplName);
-        $this->_tabletpl = $this->GetTemplate($tableTplName);
-        $this->_classname = __CLASS__;
+        $this->_table = '';
+        $this->_row = '';
+        $this->_itemempty = '';
+        $this->_itemrest = '';
+        $this->_itemtpl = GetTemplate($itemTplName, $classname);
+        $this->_rowtpl = GetTemplate($rowTplName, $classname);
+        $this->_tabletpl = GetTemplate($tableTplName, $classname);
+        $this->_classname = $classname;
     }
 
     /**
      * set a template for the rest empty grids
      * @param string $tplname   template name
      * @param array $vars   optional
-     * @see UIModel::Tpl2HTML()
+     * @see Tpl2HTML()
      * @see $_itemrest
      */
-    public function SetRestItem($tplname, array $vars=array()) {
-        $this->_itemrest = $this->TransformTpl($tplname, $vars, $this->_classname);
+    public function SetRestItem($tplname, array $vars = array()) {
+        $this->_itemrest = TransformTpl($tplname, $vars, $this->_classname);
     }
 
     /**
      * set a template to fill in the first grid when the table is empty
      * @param string $tplname   template name
      * @param array $vars   optional
-     * @see UIModel::Tpl2HTML()
+     * @see Tpl2HTML()
      * @see $_itemempty
      */
-    public function SetEmptyItem($tplname, array $vars=array()) {
-        $this->_itemempty = $this->TransformTpl($tplname, $vars, $this->_classname);
+    public function SetEmptyItem($tplname, array $vars = array()) {
+        $this->_itemempty = TransformTpl($tplname, $vars, $this->_classname);
     }
 
     /**
@@ -124,7 +129,7 @@ class TableModel extends UIModel {
      * @param string $row 
      */
     private function AddRow($row) {
-        $this->_table .= $this->Tpl2HTML($this->_rowtpl, array("RowContent" => $row), $this->_classname);
+        $this->_table .= Tpl2HTML($this->_rowtpl, array('RowContent' => $row));
         $this->_rown++;
     }
 
@@ -156,17 +161,17 @@ class TableModel extends UIModel {
 
     /**
      * assign variables associated with the new item to the item template
-     * and append the result to the buffer for a new row
+     * and append the result to the attribute $_row
      * @param array $vars   variables associated with the item 
-     * @see UIModel::Tpl2HTML()
+     * @see Tpl2HTML()
      */
     public function AddItem(array $vars) {
-        $this->_row.=$this->Tpl2HTML($this->_itemtpl, $vars, $this->_classname);
+        $this->_row.=Tpl2HTML($this->_itemtpl, $vars);
         $this->_itemcount++;
         $m = $this->_itemcount % $this->_coln;
         if ($m == 0) {
             $this->AddRow($this->_row);
-            $this->_row = "";
+            $this->_row = '';
         }
     }
 
@@ -191,7 +196,7 @@ class TableModel extends UIModel {
      * @return int
      */
     public function RowCount() {
-        return $this->_row == "" ? $this->_rown : $this->_rown + 1;
+        return $this->_row == '' ? $this->_rown : $this->_rown + 1;
     }
 
     /**
@@ -207,8 +212,8 @@ class TableModel extends UIModel {
      * clear all items in the table
      */
     public function Clear() {
-        $this->_row = "";
-        $this->_table = "";
+        $this->_row = '';
+        $this->_table = '';
         $this->_itemcount = 0;
         $this->_rown = 0;
     }
@@ -224,12 +229,10 @@ class TableModel extends UIModel {
                     $m++;
                 }
                 $this->AddRow($this->_row);
-                $this->_row = "";
+                $this->_row = '';
             }
         }
-        return $this->Tpl2HTML($this->_tabletpl, array("TableContent" => $this->_table), $this->_classname);
+        return Tpl2HTML($this->_tabletpl, array('TableContent' => $this->_table));
     }
 
 }
-
-?>
