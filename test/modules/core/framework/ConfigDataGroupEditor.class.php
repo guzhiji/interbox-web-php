@@ -1,0 +1,26 @@
+<?php
+
+LoadIBC1Class('AbstractDataGroupEditor', 'framework');
+
+/**
+ * A tool for programatically editing configurations.
+ * 
+ * @version 0.1.20130110
+ * @author Zhiji Gu <gu_zhiji@163.com>
+ * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
+ * @package interbox.core.framework
+ */
+class ConfigDataGroupEditor extends AbstractDataGroupEditor {
+
+    function __construct($group = NULL) {
+
+        if (empty($group))
+            $group = 'settings'; //default group
+            
+// load a writer
+        LoadIBC1Class('ICacheEditor', 'cache');
+        LoadIBC1Class('PHPCacheEditor', 'cache.phpcache');
+        $this->editor = new PHPCacheEditor("conf/$group.conf.php", $group);
+    }
+
+}
