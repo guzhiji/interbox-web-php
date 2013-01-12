@@ -3,7 +3,7 @@
 LoadIBC1Class('AbstractDataGroupEditor', 'framework');
 
 /**
- * A tool for programatically editing locale data.
+ * A tool for programmatically editing locale data.
  * 
  * @version 0.1.20130110
  * @author Zhiji Gu <gu_zhiji@163.com>

@@ -6,27 +6,14 @@ class SelectTheme extends ProcessModel {
         $id = strGet('id');
         $list = GetThemes();
         if (isset($list[$id])) {
-            if (isset($_GET['confirmed'])) {
-                SetThemeID($id);
-                $this->Output('MsgBox', array(
-                    'msg' => $list[$id],
-                    'url' => '?module=theme'
-                ));
-            } else {
-                $this->Output('MsgBox', array(
-                    'mode' => 'confirm',
-                    'msg' => $list[$id] . '?',
-                    'url' => queryString(array(
-                        'module' => 'theme',
-                        'function' => 'select',
-                        'id' => $id,
-                        'confirmed' => 'yes'
-                    ))
-                ));
-            }
+            SetThemeID($id);
+            $this->Output('MsgBox', array(
+                'msg' => GetLangData('theme_selected'),
+                'url' => '?module=theme'
+            ));
         } else {
             $this->Output('MsgBox', array(
-                'msg' => $id . ' not found',
+                'msg' => GetLangData('theme_notfound'),
                 'url' => '?module=theme'
             ));
         }

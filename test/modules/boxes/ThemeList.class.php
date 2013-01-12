@@ -1,7 +1,5 @@
 <?php
 
-LoadIBC1Class('ListModel', 'framework');
-
 class ThemeList extends BoxModel {
 
     function __construct($args) {

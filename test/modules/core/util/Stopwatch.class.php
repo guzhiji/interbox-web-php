@@ -5,7 +5,7 @@
  * 
  * @version 0.2.20110111
  * @author Gu Zhiji <gu_zhiji@163.com>
- * @copyright 2010-2012 InterBox Core 1.2 for PHP, GuZhiji Studio
+ * @copyright 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.util
  */
 class Stopwatch {
@@ -26,9 +26,9 @@ class Stopwatch {
         return round(($now - $this->starttime) * 1000, 5);
     }
 
-    public function elapsedSeconds() {
+    public function elapsedSecs() {
         $now = self::GetSec();
-        return intval(($now - $this->starttime));
+        return intval($now - $this->starttime);
     }
 
     public function reset() {
@@ -36,5 +36,3 @@ class Stopwatch {
     }
 
 }
-
-?>

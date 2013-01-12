@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.5.20130110
+ * @version 0.5.20130111
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -351,7 +351,9 @@ function GetLangData($key, $group = NULL) {
  */
 function GetConfigValue($key, $group = NULL) {
     if (empty($group))
-        $group = 'settings'; //default group
+        $group = 'conf_main'; //default group
+    else
+        $group = 'conf_' . $group;
 
     $reader = &$GLOBALS[IBC1_PREFIX . '_ConfigReader'];
     if (!isset($reader) || !isset($reader[$group])) {
@@ -470,7 +472,7 @@ function IsCachedDataOld($dataversion, $current) {
  * designed for <code>$cacheVersion</code> in Box and BoxGroup
  *
  * It is useful when there are a couple of versions that affect the views
- * created by a Box or a BoxGroup.
+ * created by a Box.
  * For example, in a box view, there is a list of titles whose data source
  * has a version A, whereas a setting data item with a version of B controls
  * the number of the titles in the list. Therefore, the
@@ -504,9 +506,6 @@ function GenerateCacheId($name, $factors = NULL) {
     //TODO sequence of factors
     if (!empty($factors)) {
         $name.=implode('', $factors);
-//        foreach ($factors as $f) {
-//            $name.=$f;
-//        }
     }
     //SOLUTION 1:
     //    $name = str_replace('/', '_', $name);
@@ -517,6 +516,27 @@ function GenerateCacheId($name, $factors = NULL) {
     //    return md5($name);
     //SOLUTION 3:
     return urlencode($name);
+}
+
+function ClearCache() {
+    $themes = array_keys(GetThemes());
+    foreach ($themes as $id) {
+        if (is_dir('cache/' . $id)) {
+            $languages = dir('cache/' . $id);
+            while (FALSE != ($lang = $languages->read())) {
+                if (substr($lang, 0, 1) == '.') // omit '.','..','.xxx'
+                    continue;
+                $files = dir("cache/$id/$lang");
+                while (FALSE != ($file = $files->read())) {
+                    if (substr($file, 0, 1) == '.') // omit '.','..','.xxx'
+                        continue;
+                    unlink("cache/$id/$lang/$file");
+                }
+                rmdir("cache/$id/$lang");
+            }
+            rmdir('cache/' . $id);
+        }
+    }
 }
 
 //-----------------------------------------------------------
@@ -645,16 +665,15 @@ abstract class PageModel {
             if (isset($funconf[$function_name])) {
 
                 $proconf = &$funconf[$function_name];
-                //a process should be done only once
-                //require GetSysResPath($proconf[0], $proconf[1]);#fixed package
+                //a process should run only once
                 require GetSysResPath($proconf[0] . '.class.php', 'modules/processes');
 
-                //$proc = new $proconf[0]($proconf[2]);#delete package field
                 $proc = new $proconf[0]($proconf[1]);
+                $proc->module = $module_name;
+                $proc->function = $function_name;
                 if ($proc->Process()) {
 
                     //show output of the function
-                    //require GetSysResPath($proc->output_box, $proc->output_box_pkg);#fixed package
                     require_once GetSysResPath($proc->output_box . '.class.php', 'modules/boxes');
                     $this->AddBox(new $proc->output_box($proc->output_box_params), $module_name);
 
@@ -669,9 +688,7 @@ abstract class PageModel {
         if (isset($config['box'])) {
 
             //a single box view
-            //require GetSysResPath($config['box'][0], $config['box'][1]);#fixed package
             require_once GetSysResPath($config['box'][0] . '.class.php', 'modules/boxes');
-            //$this->AddBox(new $config['box'][0]($config['box'][2]));#delete package field
             $this->AddBox(new $config['box'][0]($config['box'][1]), $module_name);
 
             return TRUE;
@@ -679,9 +696,7 @@ abstract class PageModel {
 
             //an array of boxes
             foreach ($config['boxes'] as $b) {
-                //require GetSysResPath($b[0], $b[1]);#fixed package
                 require_once GetSysResPath($b[0] . '.class.php', 'modules/boxes');
-                //$this->AddBox(new $b[0]($b[2]));#delete package field
                 $this->AddBox(new $b[0]($b[1]), $module_name);
             }
 
@@ -937,22 +952,28 @@ abstract class PageModel {
 abstract class ProcessModel {
 
     /**
+     * name of the module where it is deployed in the page
+     * @var string 
+     */
+    public $module;
+
+    /**
+     * name of the corresponding function in the page
+     * @var string 
+     */
+    public $function;
+
+    /**
      * name of a Box as output
      * @var string
      */
-    var $output_box;
-
-    /*
-     * package name of the Box
-     * @var string
-     */
-    //var $output_box_pkg;
+    public $output_box;
 
     /**
      * parameters for constructing the Box
      * @var array
      */
-    var $output_box_params;
+    public $output_box_params;
 
     /**
      * @return bool
@@ -987,19 +1008,19 @@ abstract class BoxModel {
      * 3 - hidden
      * @var int
      */
-    var $status;
+    public $status;
 
     /**
      * name of the region in the template where the box is displayed
      * @var string 
      */
-    var $region;
+    public $region;
 
     /**
-     * name of the module where it is deployed by the page
+     * name of the module where it is deployed in the page
      * @var string 
      */
-    var $module;
+    public $module;
 
     /**
      * template name, 
@@ -1033,7 +1054,7 @@ abstract class BoxModel {
      * path where cache files are stored
      * @var string 
      */
-    protected $cachePath;
+    //protected $cachePath;
     protected $cacheTimeout;
     protected $cacheGroup;
     protected $cacheKey;
@@ -1046,7 +1067,7 @@ abstract class BoxModel {
         $this->region = $region;
         $this->_tplName = $tpl;
         $this->_classname = empty($classname) ? __CLASS__ : $classname;
-        $this->cachePath = '';
+        //$this->cachePath = '';
         $this->cacheGroup = '';
         $this->cacheKey = '';
         $this->cacheTimeout = 0;
@@ -1075,7 +1096,7 @@ abstract class BoxModel {
     }
 
     /**
-     * inform that loading content failed so as to use cached data instead
+     * inform the box that loading content failed so as to use cached data instead
      */
     final protected function UseCache() {
         $this->status = BoxModel::STATUS_USECACHE;
@@ -1088,9 +1109,10 @@ abstract class BoxModel {
     protected function LoadCacheWriter() {
         if (empty($this->cacheGroup))
             return NULL;
+        $filepath = GetCachePath(TRUE) . "/{$this->cacheGroup}.cache.php";
         LoadIBC1Class('ICacheEditor', 'cache');
         LoadIBC1Class('PHPCacheEditor', 'cache.phpcache');
-        return new PHPCacheEditor($this->cachePath, $this->cacheGroup);
+        return new PHPCacheEditor($filepath, $this->cacheGroup);
     }
 
     /**
@@ -1100,9 +1122,10 @@ abstract class BoxModel {
     protected function LoadCacheReader() {
         if (empty($this->cacheGroup))
             return NULL;
+        $filepath = GetCachePath(TRUE) . "/{$this->cacheGroup}.cache.php";
         //LoadIBC1Class('ICacheReader', 'cache');
         //LoadIBC1Class('PHPCacheReader', 'cache.phpcache');
-        return new PHPCacheReader($this->cachePath, $this->cacheGroup);
+        return new PHPCacheReader($filepath, $this->cacheGroup);
     }
 
     /**

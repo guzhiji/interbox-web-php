@@ -3,13 +3,29 @@
 class Welcome extends BoxModel {
 
     function __construct($args) {
-        parent::__construct('Content', 'welcome', __CLASS__);
+        parent::__construct('Content', '', __CLASS__);
         //region=Content
-        //tpl=welcome
+        //tpl=
     }
 
     protected function LoadContent() {
-        return '';
+        $modules = array(
+            'theme' => 'page_theme',
+            'language' => 'page_lang',
+            'configuration' => 'page_config',
+            'cache' => 'page_cache'
+        );
+        require_once GetSysResPath('CustomList.class.php', 'modules/lists');
+        $list = new CustomList('select3');
+        foreach ($modules as $module => $name) {
+            $list->AddItem(array(
+                'url' => queryString(array(
+                    'module' => $module
+                )),
+                'text_name' => GetLangData($name)
+            ));
+        }
+        return $list->GetHTML();
     }
 
     public function After($page) {

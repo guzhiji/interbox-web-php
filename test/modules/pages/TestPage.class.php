@@ -2,6 +2,8 @@
 
 class TestPage extends PageModel {
 
+    private $stopwatch = NULL;
+
     function __construct() {
         parent::__construct('page1');
     }
@@ -43,6 +45,17 @@ class TestPage extends PageModel {
         } else {
             $this->SetField('RightButton', '');
         }
+    }
+
+    public function StartStopwatch() {
+        LoadIBC1Class('Stopwatch', 'util');
+        $this->stopwatch = new Stopwatch();
+    }
+
+    public function GetElapsedMillis() {
+        if (empty($this->stopwatch))
+            return -1;
+        return $this->stopwatch->elapsedMillis();
     }
 
 }

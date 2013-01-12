@@ -19,6 +19,45 @@ $p->Prepare(array(
             'functions' => array(
                 'select' => array('SelectLang', NULL)
             )
+        ),
+        'configuration' => array(
+            'box' => array('ConfigList', NULL)
+        ),
+        'configuration/editor' => array(
+            'box' => array('ConfigEditor', NULL),
+            'functions' => array(
+                'save' => array('SaveConfig', NULL),
+                'delete' => array('DeleteConfig', NULL)
+            )
+        ),
+        'cache' => array(
+            'boxes' => array(
+                array('CachedBox', NULL),
+                array('CachingController', NULL)
+            ),
+            'functions' => array(
+                'clear' => array('ClearCachedData', NULL)
+            )
+        ),
+        'cache/versioning' => array(
+            'boxes' => array(
+                array('CachedBox', array(
+                        'mode' => 'versioning'
+                )),
+                array('CachingController', array(
+                        'mode' => 'versioning'
+                ))
+            )
+        ),
+        'cache/timing' => array(
+            'boxes' => array(
+                array('CachedBox', array(
+                        'mode' => 'timing'
+                )),
+                array('CachingController', array(
+                        'mode' => 'timing'
+                ))
+            )
         )
     )
 ));

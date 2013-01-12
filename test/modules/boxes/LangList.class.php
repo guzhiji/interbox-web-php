@@ -1,7 +1,5 @@
 <?php
 
-LoadIBC1Class('ListModel', 'framework');
-
 class LangList extends BoxModel {
 
     function __construct($args) {

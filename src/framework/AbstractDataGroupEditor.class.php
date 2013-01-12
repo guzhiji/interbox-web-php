@@ -1,7 +1,7 @@
 <?php
 
 /**
- * An abstract class for programatically editing data such as locale data and configurations.
+ * An abstract class for programmatically editing data such as locale data and configurations.
  * 
  * @version 0.1.20130110
  * @author Zhiji Gu <gu_zhiji@163.com>

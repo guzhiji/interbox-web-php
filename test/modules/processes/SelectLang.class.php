@@ -6,27 +6,14 @@ class SelectLang extends ProcessModel {
         $lang = strGet('lang');
         $list = GetLanguages();
         if (isset($list[$lang])) {
-            if (isset($_GET['confirmed'])) {
-                SetLang($lang);
-                $this->Output('MsgBox', array(
-                    'msg' => $list[$lang],
-                    'url' => '?module=language'
-                ));
-            } else {
-                $this->Output('MsgBox', array(
-                    'mode' => 'confirm',
-                    'msg' => $list[$lang] . '?',
-                    'url' => queryString(array(
-                        'module' => 'language',
-                        'function' => 'select',
-                        'lang' => $lang,
-                        'confirmed' => 'yes'
-                    ))
-                ));
-            }
+            SetLang($lang);
+            $this->Output('MsgBox', array(
+                'msg' => GetLangData('lang_selected'),
+                'url' => '?module=language'
+            ));
         } else {
             $this->Output('MsgBox', array(
-                'msg' => $lang . ' not found',
+                'msg' => GetLangData('lang_notfound'),
                 'url' => '?module=language'
             ));
         }
