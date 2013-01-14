@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.5.20130111
+ * @version 0.5.20130114
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -194,7 +194,7 @@ function GetThemeID() {
     $id = strCookie('ThemeID');
 
     if (empty($id))
-        $GLOBALS[$key] = 1; //default & preserved theme id
+        $GLOBALS[$key] = 0; //default & preserved theme id
     else
         $GLOBALS[$key] = intval($id);
 
@@ -382,6 +382,26 @@ $GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'] = array(
 );
 
 /**
+ * format a static template field
+ * 
+ * @see $GLOBALS['IBC1_TEMPLATE_FORMATTING']
+ * @param string $varname
+ * @param string $varvalue
+ * @return string 
+ */
+function FormatTplField($varname, $varvalue) {
+    $pos = strpos($varname, '_');
+    if ($pos) {
+        $func = substr($varname, 0, $pos);
+        $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
+        if (isset($funclist[$func])) {
+            return call_user_func($funclist[$func], $varvalue);
+        }
+    }
+    return $varvalue;
+}
+
+/**
  * reads a template file and gets content of it
  *
  * @param string $tplname
@@ -418,7 +438,8 @@ function TransformTpl($tplname, $vars, $classname = NULL, $themeid = NULL, $lang
 /**
  * assigns parameters to the template and generates HTML
  *
- * @see $GLOBALS['IBC1_TEMPLATE_FORMATTING']
+ * @see toScriptString()
+ * @see  FormatTplField()
  * @param string $tpl   content of a template
  * @param array $vars   variables to be assigned
  * <code>
@@ -432,23 +453,48 @@ function TransformTpl($tplname, $vars, $classname = NULL, $themeid = NULL, $lang
  */
 function Tpl2HTML($tpl, $vars) {
     foreach ($vars as $varname => $varvalue) {
-        $pos = strpos($varname, '_');
-        if ($pos) {
-            $func = substr($varname, 0, $pos);
-            $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
-            if (isset($funclist[$func])) {
-                $varvalue = call_user_func($funclist[$func], $varvalue);
-            }
-        }
-        $varvalue = str_replace('\\', '\\\\', $varvalue);
-        $varvalue = str_replace('"', '\\"', $varvalue);
-        $varvalue = str_replace('$', '\\$', $varvalue);
-        eval("\$$varname=\"$varvalue\";");
+//        $pos = strpos($varname, '_');
+//        if ($pos) {
+//            $func = substr($varname, 0, $pos);
+//            $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
+//            if (isset($funclist[$func])) {
+//                $varvalue = call_user_func($funclist[$func], $varvalue);
+//            }
+//        }
+//        $varvalue = str_replace('\\', '\\\\', $varvalue);
+//        $varvalue = str_replace('"', '\\"', $varvalue);
+//        $varvalue = str_replace('$', '\\$', $varvalue);
+//        eval("\$$varname=\"$varvalue\";");
+        $varvalue = toScriptString(FormatTplField($varname, $varvalue), TRUE);
+        eval("\$$varname=$varvalue;");
     }
-    $tpl = str_replace('\\', '\\\\', $tpl);
-    $tpl = str_replace('"', '\\"', $tpl);
-    eval("\$tpl=\"$tpl\";");
+//    $tpl = str_replace('\\', '\\\\', $tpl);
+//    $tpl = str_replace('"', '\\"', $tpl);
+//    eval("\$tpl=\"$tpl\";");
+    $tpl = toScriptString($tpl, FALSE);
+    eval("\$tpl=$tpl;");
     return $tpl;
+}
+
+/**
+ * renders a php template (which is not static like {@link GetTemplate()}).
+ * 
+ * TODO debug:RenderPHPTpl
+ * @param string $tplname
+ * @param string $classname
+ * @param int $themeid
+ * @param string $lang
+ * @return string
+ */
+function RenderPHPTpl($tplname, $classname = NULL, $themeid = NULL, $lang = NULL) {
+    $path = GetTplPath($tplname . '.tpl.php', $classname, $themeid, $lang);
+    if (empty($path) || !is_file($path))
+        return '';
+    ob_start();
+    include $path;
+    $contents = ob_get_contents();
+    ob_end_clean();
+    return $contents;
 }
 
 //-----------------------------------------------------------
@@ -456,7 +502,7 @@ function Tpl2HTML($tpl, $vars) {
 //-----------------------------------------------------------
 /**
  * checks data version with the current up-to-date version stored somewhere
- * in the system for the necessity to regenerate the data to be cached
+ * in the system for the necessity to refresh the data to be cached
  *
  * @param int $dataversion
  * @param int $current
@@ -518,6 +564,9 @@ function GenerateCacheId($name, $factors = NULL) {
     return urlencode($name);
 }
 
+/**
+ * remove all cached files 
+ */
 function ClearCache() {
     $themes = array_keys(GetThemes());
     foreach ($themes as $id) {

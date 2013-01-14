@@ -12,7 +12,7 @@
 
         <div data-role="page">
 
-            <div data-role="header" data-theme="c">
+            <div data-role="header" data-theme="e">
                 {$LeftButton}
                 <h1>{$Title}</h1>
                 {$RightButton}
