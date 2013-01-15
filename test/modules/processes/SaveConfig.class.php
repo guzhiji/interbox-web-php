@@ -10,19 +10,18 @@ class SaveConfig extends ProcessModel {
             $editor = new ConfigDataGroupEditor();
             $editor->SetValue($key, $value);
             $editor->Persist();
-            $this->Output('MsgBox', array(
-                'msg' => GetLangData('config_save_finish'),
-                'url' => '?module=configuration',
-                'title' => GetLangData('page_config')
-            ));
+            return $this->OutputBox('MsgBox', array(
+                        'msg' => GetLangData('config_save_finish'),
+                        'url' => '?module=configuration',
+                        'title' => GetLangData('page_config')
+                    ));
         } catch (Exception $ex) {
-            $this->Output('MsgBox', array(
-                'msg' => GetLangData('config_save_fail'),
-                'url' => '?module=configuration',
-                'title' => GetLangData('page_config')
-            ));
+            return $this->OutputBox('MsgBox', array(
+                        'msg' => GetLangData('config_save_fail'),
+                        'url' => '?module=configuration',
+                        'title' => GetLangData('page_config')
+                    ));
         }
-        return TRUE;
     }
 
 }

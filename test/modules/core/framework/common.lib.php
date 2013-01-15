@@ -404,25 +404,11 @@ function PerformFormatting($func, $value) {
 }
 
 /**
- * format a static template field
+ * format fields for a static template
  * 
  * @see $GLOBALS['IBC1_TEMPLATE_FORMATTING']
- * @param string $varname
- * @param string $varvalue
- * @return string 
+ * @param array $vars 
  */
-function FormatTplField($varname, $varvalue) {
-    $pos = strpos($varname, '_');
-    if ($pos) {
-        $func = substr($varname, 0, $pos);
-        $funclist = &$GLOBALS['IBC1_TEMPLATE_FORMATTING'];
-        if (isset($funclist[$func])) {
-            return call_user_func($funclist[$func], $varvalue);
-        }
-    }
-    return $varvalue;
-}
-
 function FormatTplFields(&$vars) {
     foreach ($vars as $varname => &$varvalue) {
         $pos = strpos($varname, '_');
@@ -550,7 +536,7 @@ function ClearCache() {
 /**
  * a generic page model, based on a simple php string template
  *
- * @version 0.10.20130115
+ * @version 0.11.20130115
  */
 abstract class PageModel extends BoxModel {
 
@@ -664,20 +650,23 @@ abstract class PageModel extends BoxModel {
                 $proconf = &$funconf[$function_name];
                 //a process should run only once
                 require GetSysResPath($proconf[0] . '.class.php', 'modules/processes');
-
                 $proc = new $proconf[0]($proconf[1]);
                 $proc->module = $module_name;
                 $proc->function = $function_name;
-                if ($proc->Process()) {
-
-                    //show output of the function
-                    require_once GetSysResPath($proc->output_box . '.class.php', 'modules/boxes');
-                    $this->AddBox(new $proc->output_box($proc->output_box_params), NULL, $module_name);
-
-                    return TRUE;
+                $output = $proc->Process();
+                switch ($proc->status) {
+                    case ProcessModel::STATUS_NOTHING:
+                        return FALSE; //silent & no output
+                    case ProcessModel::STATUS_BOX:
+                        require_once GetSysResPath($output[0] . '.class.php', 'modules/boxes');
+                        $this->AddBox(new $output[0]($output[1]), NULL, $module_name);
+                        return TRUE;
+                    case ProcessModel::STATUS_JSON:
+                        header('Content-Type: text/plain');
+                        echo json_encode($output);
+                    case ProcessModel::STATUS_RESOURCE:
+                        exit;
                 }
-
-                return FALSE; //silent & no output
             }
         }
 
@@ -900,6 +889,17 @@ abstract class PageModel extends BoxModel {
         $this->_icon = "<link rel=\"shortcut icon\" type=\"{$mime}\" href=\"{$iconfile}\" />\n";
     }
 
+    final protected function LoadContent() {
+        $content = '';
+        foreach ($this->_boxes as $f => $c) {
+            if ($f == $this->contentFieldName)
+                $content = $c;
+            else
+                $this->SetField($f, $c);
+        }
+        return $content;
+    }
+
     final public function GetHTML() {
         //head BEGIN
         $head = '';
@@ -939,25 +939,21 @@ abstract class PageModel extends BoxModel {
         echo $this->GetHTML();
     }
 
-    protected function LoadContent() {
-        $content = '';
-        foreach ($this->_boxes as $f => $c) {
-            if ($f == $this->contentFieldName)
-                $content = $c;
-            else
-                $this->SetField($f, $c);
-        }
-        return $content;
-    }
-
 }
 
 /**
  * an abstract process for the Page-Process-Box model
  *
- * @version 0.2.20121122
+ * @version 0.3.20130115
  */
 abstract class ProcessModel {
+
+    const STATUS_NOTHING = 0;
+    const STATUS_BOX = 1;
+    const STATUS_JSON = 2;
+    const STATUS_RESOURCE = 3;
+
+    public $status = ProcessModel::STATUS_NOTHING;
 
     /**
      * name of the module where it is deployed in the page
@@ -972,27 +968,34 @@ abstract class ProcessModel {
     public $function;
 
     /**
-     * name of a Box as output
-     * @var string
-     */
-    public $output_box;
-
-    /**
-     * parameters for constructing the Box
-     * @var array
-     */
-    public $output_box_params;
-
-    /**
-     * @return bool
-     * - TRUE  : output is prepared as parameters
-     * - FALSE : silently ends the process without any output
+     * @return mixed
+     * <code>
+     * // nothing
+     * return NULL;
+     * // box
+     * return $this->OutputBox('somebox', array(...));
+     * // json
+     * return $this->OutputJSON(array(...));
+     * // resource
+     * echo ...;
+     * return $this->OutputRes();
+     * </code>
      */
     abstract public function Process();
 
-    public function Output($box, array $params) {
-        $this->output_box = $box;
-        $this->output_box_params = $params;
+    public function OutputBox($box, array $params) {
+        $this->status = ProcessModel::STATUS_BOX;
+        return array($box, $params);
+    }
+
+    public function OutputJSON($data = NULL) {
+        $this->status = ProcessModel::STATUS_JSON;
+        return $data;
+    }
+
+    public function OutputRes() {
+        $this->status = ProcessModel::STATUS_RESOURCE;
+        return NULL;
     }
 
 }
