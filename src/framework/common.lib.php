@@ -407,20 +407,33 @@ function PerformFormatting($func, $value) {
  * format a static template field
  * 
  * @see $GLOBALS['IBC1_TEMPLATE_FORMATTING']
- * @param string $field
- * @param string $value
+ * @param string $varname
+ * @param string $varvalue
  * @return string 
  */
-function FormatTplField($field, $value) {
-    $pos = strpos($field, '_');
+function FormatTplField($varname, $varvalue) {
+    $pos = strpos($varname, '_');
     if ($pos) {
-        $func = substr($field, 0, $pos);
+        $func = substr($varname, 0, $pos);
         $funclist = &$GLOBALS['IBC1_TEMPLATE_FORMATTING'];
         if (isset($funclist[$func])) {
-            return call_user_func($funclist[$func], $value);
+            return call_user_func($funclist[$func], $varvalue);
         }
     }
-    return $value;
+    return $varvalue;
+}
+
+function FormatTplFields(&$vars) {
+    foreach ($vars as $varname => &$varvalue) {
+        $pos = strpos($varname, '_');
+        if ($pos) {
+            $func = substr($varname, 0, $pos);
+            $funclist = &$GLOBALS['IBC1_TEMPLATE_FORMATTING'];
+            if (isset($funclist[$func])) {
+                $varvalue = call_user_func($funclist[$func], $varvalue);
+            }
+        }
+    }
 }
 
 /**
@@ -987,7 +1000,7 @@ abstract class ProcessModel {
 /**
  * a box container in the Page-Process-Box model
  *
- * @version 0.8.20130115
+ * @version 0.9.20130115
  */
 abstract class BoxModel {
 
@@ -1179,7 +1192,7 @@ abstract class BoxModel {
      * assigns parameters to the template and generates HTML
      *
      * @see toScriptString()
-     * @see  FormatTplField()
+     * @see FormatTplField()
      * @param string $tpl   content of a template
      * @param array $vars   variables to be assigned
      * <code>
@@ -1192,10 +1205,12 @@ abstract class BoxModel {
      * @return string
      */
     final public function Tpl2HTML($tpl, $vars) {
-        foreach ($vars as $varname => $varvalue) {
-            $varvalue = toScriptString(FormatTplField($varname, $varvalue), TRUE);
-            eval("\${$varname}={$varvalue};");
-        }
+//        foreach ($vars as $varname => $varvalue) {
+//            $varvalue = toScriptString(FormatTplField($varname, $varvalue), TRUE);
+//            eval("\${$varname}={$varvalue};");
+//        }
+        FormatTplFields($vars);
+        extract($vars, EXTR_SKIP);
         $tpl = toScriptString($tpl, FALSE);
         eval("\$tpl={$tpl};");
         return $tpl;
@@ -1204,17 +1219,18 @@ abstract class BoxModel {
     /**
      * renders a php template (which is not static like {@link GetTemplate()}).
      * 
-     * TODO debug:RenderPHPTpl
      * @param string $tplname
-     * @param string $classname
-     * @param int $themeid
-     * @param string $lang
+     * @param array $vars
      * @return string
      */
-    final public function RenderPHPTpl($tplname) {
+    final public function RenderPHPTpl($tplname, $vars = array()) {
         $path = GetTplPath($tplname . '.tpl.php', $this->className);
         if (empty($path) || !is_file($path))
             return '';
+        if (!empty($vars)) {
+            FormatTplFields($vars);
+            extract($vars, EXTR_SKIP);
+        }
         ob_start();
         include $path;
         $contents = ob_get_contents();

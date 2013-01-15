@@ -5,6 +5,7 @@ $_cachedData["en"]["keys"]["yes"]["value"] = "Yes";
 $_cachedData["en"]["keys"]["no"]["value"] = "No";
 $_cachedData["en"]["keys"]["back"]["value"] = "Back";
 $_cachedData["en"]["keys"]["add"]["value"] = "Add";
+$_cachedData["en"]["keys"]["select"]["value"] = "Select";
 $_cachedData["en"]["keys"]["page_home"]["value"] = "Home";
 $_cachedData["en"]["keys"]["page_lang"]["value"] = "Language Demo";
 $_cachedData["en"]["keys"]["page_theme"]["value"] = "Theming Demo";

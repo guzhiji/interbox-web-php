@@ -210,7 +210,10 @@ abstract class TableModel extends BoxModel {
         $this->_rown = 0;
     }
 
+    abstract protected function LoadData();
+
     final protected function LoadContent() {
+        $this->LoadData();
         return $this->_table;
     }
 

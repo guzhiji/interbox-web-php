@@ -21,4 +21,8 @@ class CustomList extends ListModel {
         
     }
 
+    protected function LoadData() {
+        
+    }
+
 }

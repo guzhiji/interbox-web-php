@@ -112,7 +112,10 @@ abstract class ListModel extends BoxModel {
         return $this->_count;
     }
 
+    abstract protected function LoadData();
+
     final protected function LoadContent() {
+        $this->LoadData();
         return $this->_items;
     }
 
