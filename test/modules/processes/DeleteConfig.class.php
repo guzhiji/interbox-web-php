@@ -12,7 +12,8 @@ class DeleteConfig extends ProcessModel {
                 $editor->Persist();
                 $this->Output('MsgBox', array(
                     'msg' => GetLangData('config_delete_finish'),
-                    'url' => '?module=configuration'
+                    'url' => '?module=configuration',
+                    'title' => GetLangData('page_config')
                 ));
             } catch (Exception $ex) {
                 $this->Output('MsgBox', array(
@@ -20,12 +21,14 @@ class DeleteConfig extends ProcessModel {
                     'url' => queryString(array(
                         'module' => 'configuration/editor',
                         'key' => $key
-                    ))
+                    )),
+                    'title' => GetLangData('page_config')
                 ));
             }
         } else {
             $this->Output('MsgBox', array(
                 'mode' => 'confirm',
+                'title' => GetLangData('page_config'),
                 'msg' => GetLangData('config_delete_confirm'),
                 'url' => queryString(array(
                     'module' => 'configuration/editor',

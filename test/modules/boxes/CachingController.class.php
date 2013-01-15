@@ -3,16 +3,15 @@
 class CachingController extends BoxModel {
 
     function __construct($args) {
-        parent::__construct('Content', $this->getTpl($args), __CLASS__);
-    }
-
-    private function getTpl($args) {
+        parent::__construct(__CLASS__);
         switch (isset($args['mode']) ? $args['mode'] : '') {
             case 'versioning':
             case 'timing':
-                return $args['mode'];
+                $this->tplName = $args['mode'];
+                break;
             default:
-                return 'nocache';
+                $this->tplName = 'nocache';
+                break;
         }
     }
 

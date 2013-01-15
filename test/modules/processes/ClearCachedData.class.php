@@ -6,7 +6,8 @@ class ClearCachedData extends ProcessModel {
         ClearCache();
         $this->Output('MsgBox', array(
             'msg' => GetLangData('cache_clear_finish'),
-            'url' => '?module=cache'
+            'url' => '?module=cache',
+            'title' => GetLangData('page_cache')
         ));
         return TRUE;
     }

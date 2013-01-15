@@ -3,9 +3,8 @@
 class CachedBox extends BoxModel {
 
     function __construct($args) {
-        parent::__construct('Content', 'box', __CLASS__);
-        //region=Content
-        //tpl=box
+        parent::__construct(__CLASS__);
+        $this->tplName = 'box';
         switch (isset($args['mode']) ? $args['mode'] : '') {
             case 'versioning':
                 $this->cacheGroup = 'caching_versioning';

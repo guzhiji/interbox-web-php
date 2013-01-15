@@ -3,24 +3,12 @@
 /**
  * A template model for a list, based on a simple php string template.
  * 
- * @version 0.4.20120109
+ * @version 0.5.20130115
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.framework
  */
-class ListModel {
-
-    /**
-     * content of the template for the list or item container
-     * @var string
-     */
-    protected $_containertpl;
-
-    /**
-     * temporary storage for variables associated with the container template
-     * @var array
-     */
-    protected $_containervars;
+abstract class ListModel extends BoxModel {
 
     /**
      * stores HTML for all items in the list
@@ -45,7 +33,6 @@ class ListModel {
      * @var int
      */
     protected $_count;
-    protected $_classname;
 
     /**
      * constructor
@@ -55,28 +42,23 @@ class ListModel {
      * @see $_itemtpl
      */
     function __construct($itemTplName, $classname = NULL) {
-        if (empty($classname))
-            $classname = __CLASS__;
-        $this->_containertpl = '';
-        $this->_containervars = array();
-        $this->_itemtpl = GetTemplate($itemTplName, $classname);
+        parent::__construct(empty($classname) ? __CLASS__ : $classname);
+        $this->_itemtpl = GetTemplate($itemTplName, $this->className);
         $this->_itemempty = '';
         $this->_items = '';
         $this->_count = 0;
-        $this->_classname = $classname;
+        $this->contentFieldName = 'ListItems';
     }
 
     /**
      * set a template for the list container
      * @param string $tplname   template name
      * @param array $vars   optional
-     * @see Tpl2HTML()
-     * @see $_containertpl
-     * @see $_containervars
      */
     public function SetContainer($tplname, array $vars = array()) {
-        $this->_containertpl = GetTemplate($tplname, $this->_classname);
-        $this->_containervars = $vars;
+        $this->tplName = $tplname;
+        foreach ($vars as $field => $content)
+            $this->SetField($field, $content);
     }
 
     /**
@@ -87,7 +69,7 @@ class ListModel {
      * @see $_itemempty
      */
     public function SetEmptyItem($tplname, array $vars = array()) {
-        $this->_itemempty = TransformTpl($tplname, $vars, $this->_classname);
+        $this->_itemempty = $this->TransformTpl($tplname, $vars);
     }
 
     /**
@@ -109,7 +91,7 @@ class ListModel {
      * @see $_items
      */
     public function AddItem(array $vars) {
-        $this->_items .= Tpl2HTML($this->_itemtpl, $vars);
+        $this->_items .= $this->Tpl2HTML($this->_itemtpl, $vars);
         $this->_count++;
     }
 
@@ -130,15 +112,14 @@ class ListModel {
         return $this->_count;
     }
 
+    final protected function LoadContent() {
+        return $this->_items;
+    }
+
     public function GetHTML() {
         if ($this->_count == 0)
             $this->_items = $this->_itemempty;
-        if ($this->_containertpl != '') {
-            $this->_containervars['ListItems'] = $this->_items;
-            return Tpl2HTML($this->_containertpl, $this->_containervars);
-        } else {
-            return $this->_items;
-        }
+        return parent::GetHTML();
     }
 
 }

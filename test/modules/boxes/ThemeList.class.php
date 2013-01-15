@@ -3,9 +3,7 @@
 class ThemeList extends BoxModel {
 
     function __construct($args) {
-        parent::__construct('Content', '', __CLASS__);
-        //region=Content
-        //tpl=
+        parent::__construct(__CLASS__);
     }
 
     protected function LoadContent() {

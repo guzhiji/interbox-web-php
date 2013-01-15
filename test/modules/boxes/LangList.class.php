@@ -3,9 +3,8 @@
 class LangList extends BoxModel {
 
     function __construct($args) {
-        parent::__construct('Content', 'form', __CLASS__);
-        //region=Content
-        //tpl=form
+        parent::__construct(__CLASS__);
+        $this->tplName = 'form';
     }
 
     protected function LoadContent() {

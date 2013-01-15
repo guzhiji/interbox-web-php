@@ -5,9 +5,8 @@ class MsgBox extends BoxModel {
     private $title;
 
     function __construct($args) {
-        parent::__construct('Content', (isset($args['mode']) && $args['mode'] == 'confirm') ? 'confirm' : 'msg', __CLASS__);
-        //region=Content
-        //tpl=msg
+        parent::__construct(__CLASS__);
+        $this->tplName = (isset($args['mode']) && $args['mode'] == 'confirm') ? 'confirm' : 'msg';
         $this->title = $args['title'];
         $this->SetField('Message', htmlspecialchars($args['msg']));
         $this->SetField('URL', $args['url']);

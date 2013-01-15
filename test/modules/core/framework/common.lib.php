@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.5.20130114
+ * @version 0.6.20130115
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -381,24 +381,32 @@ $GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'] = array(
     'float' => 'floatval'
 );
 
+function PerformFormatting($func, $value) {
+    $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
+    if (isset($funclist[$func])) {
+        return call_user_func($funclist[$func], $value);
+    }
+    return $value;
+}
+
 /**
  * format a static template field
  * 
  * @see $GLOBALS['IBC1_TEMPLATE_FORMATTING']
- * @param string $varname
- * @param string $varvalue
+ * @param string $field
+ * @param string $value
  * @return string 
  */
-function FormatTplField($varname, $varvalue) {
-    $pos = strpos($varname, '_');
+function FormatTplField($field, $value) {
+    $pos = strpos($field, '_');
     if ($pos) {
-        $func = substr($varname, 0, $pos);
+        $func = substr($field, 0, $pos);
         $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
         if (isset($funclist[$func])) {
-            return call_user_func($funclist[$func], $varvalue);
+            return call_user_func($funclist[$func], $value);
         }
     }
-    return $varvalue;
+    return $value;
 }
 
 /**
@@ -415,86 +423,6 @@ function GetTemplate($tplname, $classname = NULL, $themeid = NULL, $lang = NULL)
     if ($path == '')
         return '';
     return file_get_contents($path);
-}
-
-/**
- * reads a template, passes parameters to it and generates HTML
- *
- * @param string $tplname
- * @param array $vars
- * @param string $classname
- * @param int $themeid
- * @param string $lang
- * @return string
- * @see GetTemplate()
- * @see Tpl2HTML()
- */
-function TransformTpl($tplname, $vars, $classname = NULL, $themeid = NULL, $lang = NULL) {
-    $tpl = GetTemplate($tplname, $classname, $themeid, $lang);
-
-    return Tpl2HTML($tpl, $vars);
-}
-
-/**
- * assigns parameters to the template and generates HTML
- *
- * @see toScriptString()
- * @see  FormatTplField()
- * @param string $tpl   content of a template
- * @param array $vars   variables to be assigned
- * <code>
- * array(
- *     [variable1 name]=>[variable1 value],
- *     [variable2 name]=>[variable2 value],
- *     ...
- * )
- * </code>
- * @return string
- */
-function Tpl2HTML($tpl, $vars) {
-    foreach ($vars as $varname => $varvalue) {
-//        $pos = strpos($varname, '_');
-//        if ($pos) {
-//            $func = substr($varname, 0, $pos);
-//            $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
-//            if (isset($funclist[$func])) {
-//                $varvalue = call_user_func($funclist[$func], $varvalue);
-//            }
-//        }
-//        $varvalue = str_replace('\\', '\\\\', $varvalue);
-//        $varvalue = str_replace('"', '\\"', $varvalue);
-//        $varvalue = str_replace('$', '\\$', $varvalue);
-//        eval("\$$varname=\"$varvalue\";");
-        $varvalue = toScriptString(FormatTplField($varname, $varvalue), TRUE);
-        eval("\$$varname=$varvalue;");
-    }
-//    $tpl = str_replace('\\', '\\\\', $tpl);
-//    $tpl = str_replace('"', '\\"', $tpl);
-//    eval("\$tpl=\"$tpl\";");
-    $tpl = toScriptString($tpl, FALSE);
-    eval("\$tpl=$tpl;");
-    return $tpl;
-}
-
-/**
- * renders a php template (which is not static like {@link GetTemplate()}).
- * 
- * TODO debug:RenderPHPTpl
- * @param string $tplname
- * @param string $classname
- * @param int $themeid
- * @param string $lang
- * @return string
- */
-function RenderPHPTpl($tplname, $classname = NULL, $themeid = NULL, $lang = NULL) {
-    $path = GetTplPath($tplname . '.tpl.php', $classname, $themeid, $lang);
-    if (empty($path) || !is_file($path))
-        return '';
-    ob_start();
-    include $path;
-    $contents = ob_get_contents();
-    ob_end_clean();
-    return $contents;
 }
 
 //-----------------------------------------------------------
@@ -595,17 +523,10 @@ function ClearCache() {
 /**
  * a generic page model, based on a simple php string template
  *
- * @version 0.9.20121122
+ * @version 0.10.20130115
  */
-abstract class PageModel {
+abstract class PageModel extends BoxModel {
 
-    /**
-     * name of page template
-     *
-     * @var string
-     */
-    private $_pagetpl = '';
-    private $_classname;
     private $_title = '';
     private $_keywords;
     private $_description;
@@ -615,21 +536,21 @@ abstract class PageModel {
     private $_js = '';
     private $_jsfile = '';
     private $_icon = '';
-    private $_regions = array();
+    private $_boxes = array();
 
     /**
      * constructor
      *
      * @param string $pagetpl   name of page template
-     * @see $_pagetpl
      */
     function __construct($pagetpl, $classname = NULL) {
-        $this->_pagetpl = $pagetpl;
-        $this->_classname = empty($classname) ? __CLASS__ : $classname;
+        parent::__construct(empty($classname) ? __CLASS__ : $classname);
+        $this->tplName = $pagetpl;
         LoadIBC1Class('WordList', 'util');
         $this->_keywords = new WordList();
         $this->_description = new WordList();
-        $this->Initialize();
+        //$this->Initialize();
+        $this->Before(NULL);
     }
 
     /**
@@ -637,7 +558,7 @@ abstract class PageModel {
      *
      *  e.g. start timer
      */
-    abstract protected function Initialize();
+    //abstract protected function Initialize();
 
     /**
      * invoke functions requested by the client and registered in the
@@ -724,7 +645,7 @@ abstract class PageModel {
 
                     //show output of the function
                     require_once GetSysResPath($proc->output_box . '.class.php', 'modules/boxes');
-                    $this->AddBox(new $proc->output_box($proc->output_box_params), $module_name);
+                    $this->AddBox(new $proc->output_box($proc->output_box_params), NULL, $module_name);
 
                     return TRUE;
                 }
@@ -738,15 +659,15 @@ abstract class PageModel {
 
             //a single box view
             require_once GetSysResPath($config['box'][0] . '.class.php', 'modules/boxes');
-            $this->AddBox(new $config['box'][0]($config['box'][1]), $module_name);
+            $this->AddBox(new $config['box'][0]($config['box'][1]), NULL, $module_name);
 
             return TRUE;
         } else if (isset($config['boxes'])) {
 
             //an array of boxes
-            foreach ($config['boxes'] as $b) {
+            foreach ($config['boxes'] as $f => $b) {
                 require_once GetSysResPath($b[0] . '.class.php', 'modules/boxes');
-                $this->AddBox(new $b[0]($b[1]), $module_name);
+                $this->AddBox(new $b[0]($b[1]), is_string($f) ? $f : NULL, $module_name);
             }
 
             return TRUE;
@@ -759,23 +680,25 @@ abstract class PageModel {
      *
      * e.g. set page header/footer, stop timer
      */
-    abstract protected function Finalize();
+    //abstract protected function Finalize();
 
     /**
-     * add a box to a region defined by the box itself
+     * add a box to a field of its parent
      *
      * @param BoxModel $box
+     * @param string $field
      * @param string $module
      */
-    final public function AddBox(BoxModel $box, $module = '') {
+    final public function AddBox(BoxModel $box, $field = '', $module = '') {
+        if (empty($field))
+            $field = $this->contentFieldName;
         $box->module = $module;
         $box->Before($this);
         $html = $box->GetHTML();
-        $r = $box->region;
-        if (isset($this->_regions[$r]))
-            $this->_regions[$r].= $html;
+        if (isset($this->_boxes[$field]))
+            $this->_boxes[$field].= $html;
         else
-            $this->_regions[$r] = $html;
+            $this->_boxes[$field] = $html;
         $box->After($this);
     }
 
@@ -950,10 +873,6 @@ abstract class PageModel {
         $this->_icon = "<link rel=\"shortcut icon\" type=\"{$mime}\" href=\"{$iconfile}\" />\n";
     }
 
-    final public function SetField($fieldname, $value) {
-        $this->_regions[$fieldname] = $value;
-    }
-
     final public function GetHTML() {
         //head BEGIN
         $head = '';
@@ -979,16 +898,29 @@ abstract class PageModel {
         $head.=$this->_meta;
         //head END
         //output
-        $this->_regions['Keywords'] = $this->_keywords->GetWords();
-        $this->_regions['Description'] = $this->_description->GetWords();
-        $this->_regions['Title'] = $this->_title;
-        $this->_regions['Head'] = $head;
-        $this->Finalize();
-        return TransformTpl($this->_pagetpl, $this->_regions, $this->_classname);
+        $this->SetField('Keywords', $this->_keywords->GetWords());
+        $this->SetField('Description', $this->_description->GetWords());
+        $this->SetField('Title', $this->_title);
+        $this->SetField('Head', $head);
+        //$this->Finalize();
+        $this->After(NULL);
+        //return $this->TransformTpl($this->tplName, $this->_fields);
+        return parent::GetHTML();
     }
 
     final public function Show() {
         echo $this->GetHTML();
+    }
+
+    protected function LoadContent() {
+        $content = '';
+        foreach ($this->_boxes as $f => $c) {
+            if ($f == $this->contentFieldName)
+                $content = $c;
+            else
+                $this->SetField($f, $c);
+        }
+        return $content;
     }
 
 }
@@ -1041,7 +973,7 @@ abstract class ProcessModel {
 /**
  * a box container in the Page-Process-Box model
  *
- * @version 0.7.20130109
+ * @version 0.8.20130115
  */
 abstract class BoxModel {
 
@@ -1060,30 +992,10 @@ abstract class BoxModel {
     public $status;
 
     /**
-     * name of the region in the template where the box is displayed
-     * @var string 
-     */
-    public $region;
-
-    /**
      * name of the module where it is deployed in the page
      * @var string 
      */
     public $module;
-
-    /**
-     * template name, 
-     * e.g. templates/[class name]/[lang]/{{template name}}.tpl
-     * @var string 
-     */
-    private $_tplName;
-
-    /**
-     * name of the current class, 
-     * e.g. templates/{{class name}}/[lang]/[template name].tpl
-     * @var string 
-     */
-    private $_classname;
 
     /**
      * name of a Box to be forwarded
@@ -1096,14 +1008,33 @@ abstract class BoxModel {
      * @var array
      */
     private $_forwardbox_params;
-    private $_extrafields = array();
+
+    /**
+     * a hash map of fields and their contents that will fill in the template.
+     * 
+     * <code>
+     * array(
+     *      '[field name]' => '[content]'
+     * )
+     * </code>
+     * @var array 
+     */
+    private $_fields = array();
     private $_cachereader = NULL;
 
     /**
-     * path where cache files are stored
+     * name of the class (extended class), 
+     * e.g. templates/{{class name}}/[lang]/[template name].tpl
      * @var string 
      */
-    //protected $cachePath;
+    protected $className;
+
+    /**
+     * template name, 
+     * e.g. templates/[class name]/[lang]/{{template name}}.tpl
+     * @var string 
+     */
+    protected $tplName;
     protected $cacheTimeout;
     protected $cacheGroup;
     protected $cacheKey;
@@ -1111,12 +1042,10 @@ abstract class BoxModel {
     protected $cacheRandFactor;
     protected $contentFieldName;
 
-    function __construct($region, $tpl, $classname = NULL) {
+    function __construct($classname = NULL) {
         $this->status = BoxModel::STATUS_NORMAL;
-        $this->region = $region;
-        $this->_tplName = $tpl;
-        $this->_classname = empty($classname) ? __CLASS__ : $classname;
-        //$this->cachePath = '';
+        $this->className = empty($classname) ? __CLASS__ : $classname;
+        $this->tplName = '';
         $this->cacheGroup = '';
         $this->cacheKey = '';
         $this->cacheTimeout = 0;
@@ -1180,25 +1109,111 @@ abstract class BoxModel {
     /**
      * @return string 
      */
-    private function LoadForwardedContent() {
-        if (empty($this->_forwardbox))
-            return '';
-        require_once GetSysResPath($this->_forwardbox . '.class.php', 'modules/boxes');
-        $box = new $this->_forwardbox($this->_forwardbox_params);
-        return $box->GetHTML();
-    }
-
-    /**
-     * @return string 
-     */
     abstract protected function LoadContent();
 
     abstract public function Before($page);
 
     abstract public function After($page);
 
+    final public function GetThemeID() {
+        return GetThemeID();
+    }
+
+    final public function GetLang() {
+        return GetLang();
+    }
+
+    final public function GetLangData($key, $group = NULL) {
+        return GetLangData($key, $group);
+    }
+
+    final public function GetConfigValue($key, $group = NULL) {
+        return GetConfigValue($key, $group);
+    }
+
+    final public function Format($func, $value) {
+        return PerformFormatting($func, $value);
+    }
+
+    /**
+     * reads a template, passes parameters to it and generates HTML
+     *
+     * @param string $tplname
+     * @param array $vars
+     * @param string $classname
+     * @param int $themeid
+     * @param string $lang
+     * @return string
+     * @see GetTemplate()
+     * @see Tpl2HTML()
+     */
+    final public function TransformTpl($tplname, $vars) {
+        $tpl = GetTemplate($tplname, $this->className);
+
+        return $this->Tpl2HTML($tpl, $vars);
+    }
+
+    /**
+     * assigns parameters to the template and generates HTML
+     *
+     * @see toScriptString()
+     * @see  FormatTplField()
+     * @param string $tpl   content of a template
+     * @param array $vars   variables to be assigned
+     * <code>
+     * array(
+     *     [variable1 name]=>[variable1 value],
+     *     [variable2 name]=>[variable2 value],
+     *     ...
+     * )
+     * </code>
+     * @return string
+     */
+    final public function Tpl2HTML($tpl, $vars) {
+        foreach ($vars as $varname => $varvalue) {
+            $varvalue = toScriptString(FormatTplField($varname, $varvalue), TRUE);
+            eval("\${$varname}={$varvalue};");
+        }
+        $tpl = toScriptString($tpl, FALSE);
+        eval("\$tpl={$tpl};");
+        return $tpl;
+    }
+
+    /**
+     * renders a php template (which is not static like {@link GetTemplate()}).
+     * 
+     * TODO debug:RenderPHPTpl
+     * @param string $tplname
+     * @param string $classname
+     * @param int $themeid
+     * @param string $lang
+     * @return string
+     */
+    final public function RenderPHPTpl($tplname) {
+        $path = GetTplPath($tplname . '.tpl.php', $this->className);
+        if (empty($path) || !is_file($path))
+            return '';
+        ob_start();
+        include $path;
+        $contents = ob_get_contents();
+        ob_end_clean();
+        return $contents;
+    }
+
     final public function SetField($fieldname, $value) {
-        $this->_extrafields[$fieldname] = $value;
+        if (!empty($fieldname))
+            $this->_fields[$fieldname] = $value;
+    }
+
+    /**
+     * @return string 
+     */
+    private function LoadForwardedContent() {
+        if (empty($this->_forwardbox))
+            return '';
+        require_once GetSysResPath($this->_forwardbox . '.class.php', 'modules/boxes');
+        $box = new $this->_forwardbox($this->_forwardbox_params);
+        return $box->GetHTML();
     }
 
     final public function GetRefreshedHTML() {
@@ -1208,12 +1223,11 @@ abstract class BoxModel {
         // during content loading, status can be changed 
         switch ($this->status) {
             case BoxModel::STATUS_NORMAL:
-
                 // fill content in the template
-                if (!empty($this->_tplName)) {
-                    $this->_extrafields[$this->contentFieldName] = $html;
-                    $html = TransformTpl(
-                            $this->_tplName, $this->_extrafields, $this->_classname
+                if (!empty($this->tplName)) {
+                    $this->_fields[$this->contentFieldName] = $html;
+                    $html = $this->TransformTpl(
+                            $this->tplName, $this->_fields
                     );
                 }
 

@@ -12,12 +12,14 @@ class SaveConfig extends ProcessModel {
             $editor->Persist();
             $this->Output('MsgBox', array(
                 'msg' => GetLangData('config_save_finish'),
-                'url' => '?module=configuration'
+                'url' => '?module=configuration',
+                'title' => GetLangData('page_config')
             ));
         } catch (Exception $ex) {
             $this->Output('MsgBox', array(
                 'msg' => GetLangData('config_save_fail'),
-                'url' => '?module=configuration'
+                'url' => '?module=configuration',
+                'title' => GetLangData('page_config')
             ));
         }
         return TRUE;

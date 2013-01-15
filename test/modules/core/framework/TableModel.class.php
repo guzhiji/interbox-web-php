@@ -2,13 +2,13 @@
 
 /**
  * A generic template model for a table, based on a simple php string template.
- * 
- * @version 0.4.20120109
+ * TODO debug TableModel
+ * @version 0.5.20130115
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.framework
  */
-class TableModel {
+abstract class TableModel extends BoxModel {
 
     /**
      * number of columns
@@ -35,12 +35,6 @@ class TableModel {
     protected $_rowtpl;
 
     /**
-     * template content for the table
-     * @var string
-     */
-    protected $_tabletpl;
-
-    /**
      * number of items added
      * @var int
      */
@@ -57,7 +51,6 @@ class TableModel {
      * @var string
      */
     protected $_itemrest;
-    protected $_classname;
 
     /**
      * stores HTML for the table
@@ -81,12 +74,10 @@ class TableModel {
      * (using __CLASS__); if not specified, use "TableModel"
      * @see $_itemtpl
      * @see $_rowtpl
-     * @see $_tabletpl
      * @see $_coln
      */
     function __construct($itemTplName, $rowTplName, $tableTplName, $coln, $classname = NULL) {
-        if (empty($classname))
-            $classname = __CLASS__;
+        parent::__construct(empty($classname) ? __CLASS__ : $classname);
         $this->_coln = intval($coln);
         if ($this->_coln < 1)
             $this->_coln = 1;
@@ -98,8 +89,9 @@ class TableModel {
         $this->_itemrest = '';
         $this->_itemtpl = GetTemplate($itemTplName, $classname);
         $this->_rowtpl = GetTemplate($rowTplName, $classname);
-        $this->_tabletpl = GetTemplate($tableTplName, $classname);
-        $this->_classname = $classname;
+        $this->tplName = $tableTplName;
+        $this->className = $classname;
+        $this->contentFieldName = 'TableContent';
     }
 
     /**
@@ -110,7 +102,7 @@ class TableModel {
      * @see $_itemrest
      */
     public function SetRestItem($tplname, array $vars = array()) {
-        $this->_itemrest = TransformTpl($tplname, $vars, $this->_classname);
+        $this->_itemrest = $this->TransformTpl($tplname, $vars);
     }
 
     /**
@@ -121,7 +113,7 @@ class TableModel {
      * @see $_itemempty
      */
     public function SetEmptyItem($tplname, array $vars = array()) {
-        $this->_itemempty = TransformTpl($tplname, $vars, $this->_classname);
+        $this->_itemempty = $this->TransformTpl($tplname, $vars);
     }
 
     /**
@@ -129,7 +121,7 @@ class TableModel {
      * @param string $row 
      */
     private function AddRow($row) {
-        $this->_table .= Tpl2HTML($this->_rowtpl, array('RowContent' => $row));
+        $this->_table .= $this->Tpl2HTML($this->_rowtpl, array('RowContent' => $row));
         $this->_rown++;
     }
 
@@ -166,7 +158,7 @@ class TableModel {
      * @see Tpl2HTML()
      */
     public function AddItem(array $vars) {
-        $this->_row.=Tpl2HTML($this->_itemtpl, $vars);
+        $this->_row.=$this->Tpl2HTML($this->_itemtpl, $vars);
         $this->_itemcount++;
         $m = $this->_itemcount % $this->_coln;
         if ($m == 0) {
@@ -218,6 +210,10 @@ class TableModel {
         $this->_rown = 0;
     }
 
+    final protected function LoadContent() {
+        return $this->_table;
+    }
+
     public function GetHTML() {
         if ($this->_itemcount == 0) {
             $this->AddRow($this->_itemempty);
@@ -232,7 +228,7 @@ class TableModel {
                 $this->_row = '';
             }
         }
-        return Tpl2HTML($this->_tabletpl, array('TableContent' => $this->_table));
+        return parent::GetHTML();
     }
 
 }
