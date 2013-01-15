@@ -15,7 +15,7 @@ class LangDataGroupEditor extends AbstractDataGroupEditor {
     function __construct($group = NULL) {
 
         // read language code
-        $lang = &$GLOBALS[IBC1_PREFIX . '_Language'];
+        $lang = &$GLOBALS['IBC1_Language'];
         if (!isset($lang))
             $lang = GetLang();
 

@@ -33,7 +33,7 @@
 function GetSysResPath($resname, $path) {
     $syspath = '';
     if (defined('IBC1_SYSTEM_ROOT'))
-        $syspath = IBC1_SYSTEM_ROOT;
+        $syspath = constant('IBC1_SYSTEM_ROOT');
     $sysrespath = $path . '/' . $resname;
     if (is_file($syspath . $sysrespath))
         return $sysrespath;
@@ -56,7 +56,7 @@ function GetThemeResPath($resname, $restype, $themeid = NULL) {
     //get system path
     $syspath = '';
     if (defined('IBC1_SYSTEM_ROOT'))
-        $syspath = IBC1_SYSTEM_ROOT;
+        $syspath = constant('IBC1_SYSTEM_ROOT');
 
     //get relative path
     $sysrespath = $restype . '/' . $resname;
@@ -91,7 +91,7 @@ function GetCachePath($makedir = FALSE, $themeid = NULL, $lang = NULL) {
     //get system path
     $syspath = '';
     if (defined('IBC1_SYSTEM_ROOT'))
-        $syspath = IBC1_SYSTEM_ROOT;
+        $syspath = constant('IBC1_SYSTEM_ROOT');
 
     //get relative path
     $cachepath = 'cache/' . $themeid . '/' . $lang;
@@ -128,47 +128,63 @@ function GetTplPath($filename, $classname = NULL, $themeid = NULL, $lang = NULL)
     //get system path
     $syspath = '';
     if (defined('IBC1_SYSTEM_ROOT'))
-        $syspath = IBC1_SYSTEM_ROOT;
-
-    //get relative path
-    $sysrespath = 'templates/';
-    $themerespath = 'themes/' . $themeid . '/templates/';
+        $syspath = constant('IBC1_SYSTEM_ROOT');
 
     if (!empty($classname))
         $classname.='/';
     else
         $classname = '';
 
+    // get language code
     if ($lang == NULL)
         $lang = GetLang();
     else
         $lang = strtolower($lang);
 
+    $dlang = strtolower(constant('IBC1_DEFAULT_LANGUAGE'));
+
+    $theme = strval($themeid);
     while (TRUE) {
-        if ($lang != 'neutral') {
-            $tplpath = $syspath . $themerespath . $classname . $lang . '/' . $filename;
-            if (is_file($tplpath)) {
+        if ($theme == '0') {
+            // system-level
+            $sysrespath = "{$syspath}templates/{$classname}";
+            $tplpath = $sysrespath . $lang . '/' . $filename;
+            if (is_file($tplpath))
                 return $tplpath;
-            }
-            $tplpath = $syspath . $sysrespath . $classname . $lang . '/' . $filename;
-            if (is_file($tplpath)) {
+
+            // a language-neutral file
+            $tplpath = $sysrespath . $filename;
+            if (is_file($tplpath))
                 return $tplpath;
+
+            // not fully supported, needs aid from the default language
+            if ($lang != $dlang) {
+                if ($theme != '0') {
+                    // theme-level
+                    $themerespath = "{$syspath}themes/{$theme}/templates/{$classname}";
+                    $tplpath = $themerespath . $dlang . '/' . $filename;
+                    if (is_file($tplpath))
+                        return $tplpath;
+                }
+                // system-level
+                $tplpath = $sysrespath . $dlang . '/' . $filename;
+                if (is_file($tplpath))
+                    return $tplpath;
             }
-        }
-        if ($lang != IBC1_DEFAULT_LANGUAGE) {
-            //neutral
-            $tplpath = $syspath . $themerespath . $classname . $filename;
-            if (is_file($tplpath)) {
-                return $tplpath;
-            }
-            $tplpath = $syspath . $sysrespath . $classname . $filename;
-            if (is_file($tplpath)) {
-                return $tplpath;
-            }
-            $lang = IBC1_DEFAULT_LANGUAGE;
-        } else {
-            //not found
             return '';
+        } else {
+            // theme-level
+            $themerespath = "{$syspath}themes/{$theme}/templates/{$classname}";
+            $tplpath = $themerespath . $lang . '/' . $filename;
+            if (is_file($tplpath))
+                return $tplpath;
+
+            // a language-neutral file
+            $tplpath = $themerespath . $filename;
+            if (is_file($tplpath))
+                return $tplpath;
+
+            $theme = '0';
         }
     }
 }
@@ -186,7 +202,7 @@ LoadIBC1Class('PHPCacheReader', 'cache.phpcache');
  * @return int
  */
 function GetThemeID() {
-    $key = IBC1_PREFIX . '_ThemeID';
+    $key = 'IBC1_ThemeID';
 
     if (isset($GLOBALS[$key]))
         return $GLOBALS[$key];
@@ -207,10 +223,9 @@ function GetThemeID() {
  * @param int $id 
  */
 function SetThemeID($id) {
-    $key = IBC1_PREFIX . '_ThemeID';
     $id = intval($id);
-    $GLOBALS[$key] = $id;
-    setcookie($key, $id, time() + 7 * 24 * 60 * 60);
+    $GLOBALS['IBC1_ThemeID'] = $id;
+    setcookie(IBC1_PREFIX . '_ThemeID', $id, time() + 7 * 24 * 60 * 60);
 }
 
 /**
@@ -240,7 +255,7 @@ function GetThemes() {
  * @return string
  */
 function GetLang() {
-    $key = IBC1_PREFIX . '_Language';
+    $key = 'IBC1_Language';
 
     //not first time
     if (isset($GLOBALS[$key]))
@@ -274,7 +289,7 @@ function GetLang() {
     }
 
     //default
-    $GLOBALS[$key] = strtolower(IBC1_DEFAULT_LANGUAGE);
+    $GLOBALS[$key] = strtolower(constant('IBC1_DEFAULT_LANGUAGE'));
     return $GLOBALS[$key];
 }
 
@@ -285,9 +300,8 @@ function GetLang() {
  */
 function SetLang($lang) {
     if (is_dir('lang/' . $lang)) {
-        $key = IBC1_PREFIX . '_Language';
-        $GLOBALS[$key] = $lang;
-        setcookie($key, $lang, time() + 7 * 24 * 60 * 60);
+        $GLOBALS['IBC1_Language'] = $lang;
+        setcookie(IBC1_PREFIX . '_Language', $lang, time() + 7 * 24 * 60 * 60);
     }
 }
 
@@ -320,7 +334,7 @@ function GetLanguages() {
 function GetLangData($key, $group = NULL) {
 
     // read language code
-    $lang = &$GLOBALS[IBC1_PREFIX . '_Language'];
+    $lang = &$GLOBALS['IBC1_Language'];
     if (!isset($lang))
         $lang = GetLang();
 
@@ -331,7 +345,7 @@ function GetLangData($key, $group = NULL) {
         $group = $lang . '_' . $group;
 
     // load a reader for the group if not existing
-    $reader = &$GLOBALS[IBC1_PREFIX . '_LangDataReader'];
+    $reader = &$GLOBALS['IBC1_LangDataReader'];
     if (!isset($reader) || !isset($reader[$group])) {
         $reader[$group] = new PHPCacheReader("lang/$lang/$group.lang.php", $group);
     }
@@ -355,7 +369,7 @@ function GetConfigValue($key, $group = NULL) {
     else
         $group = 'conf_' . $group;
 
-    $reader = &$GLOBALS[IBC1_PREFIX . '_ConfigReader'];
+    $reader = &$GLOBALS['IBC1_ConfigReader'];
     if (!isset($reader) || !isset($reader[$group])) {
         $reader[$group] = new PHPCacheReader("conf/$group.conf.php", $group);
     }
@@ -372,7 +386,7 @@ function GetConfigValue($key, $group = NULL) {
  * @global array $GLOBALS['IBC1_TEMPLATE_FORMATTING']
  * @name $IBC1_TEMPLATE_FORMATTING 
  */
-$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'] = array(
+$GLOBALS['IBC1_TEMPLATE_FORMATTING'] = array(
     'html' => 'filterhtml',
     'text' => 'htmlspecialchars', //TODO nl2br or not
     'jsstr' => 'toScriptString',
@@ -382,7 +396,7 @@ $GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'] = array(
 );
 
 function PerformFormatting($func, $value) {
-    $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
+    $funclist = &$GLOBALS['IBC1_TEMPLATE_FORMATTING'];
     if (isset($funclist[$func])) {
         return call_user_func($funclist[$func], $value);
     }
@@ -401,7 +415,7 @@ function FormatTplField($field, $value) {
     $pos = strpos($field, '_');
     if ($pos) {
         $func = substr($field, 0, $pos);
-        $funclist = &$GLOBALS[IBC1_PREFIX . '_TEMPLATE_FORMATTING'];
+        $funclist = &$GLOBALS['IBC1_TEMPLATE_FORMATTING'];
         if (isset($funclist[$func])) {
             return call_user_func($funclist[$func], $value);
         }
@@ -1041,10 +1055,12 @@ abstract class BoxModel {
     protected $cacheVersion;
     protected $cacheRandFactor;
     protected $contentFieldName;
+    protected $boxArgs;
 
-    function __construct($classname = NULL) {
+    function __construct($classname = NULL, $args = array()) {
         $this->status = BoxModel::STATUS_NORMAL;
         $this->className = empty($classname) ? __CLASS__ : $classname;
+        $this->boxArgs = $args;
         $this->tplName = '';
         $this->cacheGroup = '';
         $this->cacheKey = '';
@@ -1129,6 +1145,12 @@ abstract class BoxModel {
 
     final public function GetConfigValue($key, $group = NULL) {
         return GetConfigValue($key, $group);
+    }
+
+    final public function GetBoxArgument($name) {
+        if (isset($this->boxArgs[$name]))
+            return $this->boxArgs[$name];
+        return '';
     }
 
     final public function Format($func, $value) {

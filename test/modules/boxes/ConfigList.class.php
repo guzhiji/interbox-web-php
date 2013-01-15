@@ -8,7 +8,7 @@ class ConfigList extends BoxModel {
 
     protected function LoadContent() {
         GetConfigValue(''); // initialize the reader
-        $reader = $GLOBALS[IBC1_PREFIX . '_ConfigReader']['conf_main'];
+        $reader = $GLOBALS['IBC1_ConfigReader']['conf_main'];
         $keys = $reader->GetKeys();
 
         require_once GetSysResPath('CustomList.class.php', 'modules/lists');
