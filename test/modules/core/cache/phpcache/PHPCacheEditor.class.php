@@ -9,10 +9,10 @@
  * And it is also possible to set an expiry time for 
  * each value or even a whole group.
  * 
- * @version 0.7.20120112
+ * @version 0.7.20130116
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
- * @copyright &copy; 2010-2012 InterBox Core 1.2 for PHP, GuZhiji Studio
+ * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.cache.phpcache
  */
 class PHPCacheEditor implements ICacheEditor {
@@ -54,34 +54,34 @@ class PHPCacheEditor implements ICacheEditor {
     public function SetValue($key, $value, $seconds = 0, $withversion = FALSE) {
         GLOBAL $_cachedData;
         //check key
-        if (!preg_match("/^[^\r\n\"\']+$/i", $key)) {
-            throw new Exception("invalid key");
+        if (!preg_match('/^[^\r\n"\']+$/i', $key)) {
+            throw new Exception('invalid key');
         }
         //assign value
-        $_cachedData[$this->group]["keys"][$key]["value"] = $value;
-        $cd = &$_cachedData[$this->group]["keys"][$key];
+        $_cachedData[$this->group]['keys'][$key]['value'] = $value;
+        $cd = &$_cachedData[$this->group]['keys'][$key];
         if (is_array($value) || is_object($value)) {
-            $cd["serialized"] = TRUE;
-        } else if (isset($cd["serialized"])) {
-            unset($cd["serialized"]);
+            $cd['serialized'] = TRUE;
+        } else if (isset($cd['serialized'])) {
+            unset($cd['serialized']);
         }
         //update expiry time
         if ($seconds > 0)
-            $cd["expire"] = time() + $seconds;
-        else if ($seconds < 0 && isset($cd["expire"]))
-            unset($cd["expire"]);
-//        else if ($seconds == 0 && isset($cd["expire"]) && $cd["expire"] < time())
-//            throw new Exception("expired");
+            $cd['expire'] = time() + $seconds;
+        else if ($seconds < 0 && isset($cd['expire']))
+            unset($cd['expire']);
+//        else if ($seconds == 0 && isset($cd['expire']) && $cd['expire'] < time())
+//            throw new Exception('expired');
         //update version
         if ($withversion) {
-            $cd["version"] = time();
+            $cd['version'] = time();
         }
     }
 
     public function Remove($key) {
         GLOBAL $_cachedData;
-        if (isset($_cachedData[$this->group]["keys"])) {
-            $cd = &$_cachedData[$this->group]["keys"];
+        if (isset($_cachedData[$this->group]['keys'])) {
+            $cd = &$_cachedData[$this->group]['keys'];
             if (isset($cd[$key]))
                 unset($cd[$key]);
         }
@@ -99,70 +99,70 @@ class PHPCacheEditor implements ICacheEditor {
         if (!isset($_cachedData[$this->group])) {
             $r = @unlink($this->cachefile);
             if (!$r) {
-                throw new Exception("cannot remove the cache file");
+                throw new Exception('cannot remove the cache file');
             }
             return;
         }
 
-        $fp = fopen($this->cachefile, "w");
+        $fp = fopen($this->cachefile, 'w');
         if (!$fp) {
-            throw new Exception("cannot open cache file");
+            throw new Exception('cannot open cache file');
         }
         if (!flock($fp, LOCK_EX)) {
-            throw new Exception("cannot lock cache file");
+            throw new Exception('cannot lock cache file');
         }
 
-        $varname = "\$_cachedData[\"{$this->group}\"]";
+        $varname = "\$_cachedData['{$this->group}']";
         $cd = &$_cachedData[$this->group];
 
         fwrite($fp, "<?php\n");
 
-        if (isset($cd["expire"]) && $cd["expire"] >= time()) {
-            fwrite($fp, "{$varname}[\"expire\"]={$cd["expire"]};\n");
+        if (isset($cd['expire']) && $cd['expire'] >= time()) {
+            fwrite($fp, "{$varname}['expire']={$cd['expire']};\n");
         }
-        if (isset($cd["keys"])) {
-            foreach ($cd["keys"] as $key => &$value) {
+        if (isset($cd['keys'])) {
+            foreach ($cd['keys'] as $key => &$value) {
 
-                if (isset($value["value"])) {
+                if (isset($value['value'])) {
                     //write the first part
-                    fwrite($fp, "{$varname}[\"keys\"][\"{$key}\"][\"value\"]=");
+                    fwrite($fp, "{$varname}['keys']['{$key}']['value']=");
 
-                    if (isset($value["serialized"])) {
-                        if (is_string($value["value"])) {
+                    if (isset($value['serialized'])) {
+                        if (is_string($value['value'])) {
                             //already serialized, write it as a string
-                            fwrite($fp, toScriptString($value["value"]) . ";\n");
+                            fwrite($fp, toScriptString($value['value'], TRUE) . ";\n");
                         } else {
                             //not yet, serialize it and write it as a string
-                            fwrite($fp, toScriptString(serialize($value["value"])) . ";\n");
+                            fwrite($fp, toScriptString(serialize($value['value']), TRUE) . ";\n");
                         }
                         //mark it as serialized
-                        fwrite($fp, "{$varname}[\"keys\"][\"{$key}\"][\"serialized\"]=TRUE;\n");
-                    } else if (is_string($value["value"])) {
+                        fwrite($fp, "{$varname}['keys']['{$key}']['serialized']=TRUE;\n");
+                    } else if (is_string($value['value'])) {
                         //write a string
-                        fwrite($fp, toScriptString($value["value"]) . ";\n");
-                    } else if (is_bool($value["value"])) {
+                        fwrite($fp, toScriptString($value['value'], TRUE) . ";\n");
+                    } else if (is_bool($value['value'])) {
                         //write true or false
-                        fwrite($fp, ($value["value"] ? "TRUE" : "FALSE") . ";\n");
-                    } else if (is_numeric($value["value"])) {
+                        fwrite($fp, ($value['value'] ? 'TRUE' : 'FALSE') . ";\n");
+                    } else if (is_numeric($value['value'])) {
                         //write a number
-                        fwrite($fp, $value["value"] . ";\n");
+                        fwrite($fp, $value['value'] . ";\n");
                     } else {
                         //serialize and write
-                        fwrite($fp, toScriptString(serialize($value["value"]), TRUE) . ";\n");
-                        fwrite($fp, "{$varname}[\"keys\"][\"{$key}\"][\"serialized\"]=TRUE;\n");
+                        fwrite($fp, toScriptString(serialize($value['value']), TRUE) . ";\n");
+                        fwrite($fp, "{$varname}['keys']['{$key}']['serialized']=TRUE;\n");
                     }
-                    if (isset($value["version"])) {
+                    if (isset($value['version'])) {
                         //append version
-                        fwrite($fp, "{$varname}[\"keys\"][\"{$key}\"][\"version\"]={$value["version"]};\n");
+                        fwrite($fp, "{$varname}['keys']['{$key}']['version']={$value['version']};\n");
                     }
-                    if (isset($value["expire"])) {
+                    if (isset($value['expire'])) {
                         //append the expiry time
-                        fwrite($fp, "{$varname}[\"keys\"][\"{$key}\"][\"expire\"]={$value["expire"]};\n");
+                        fwrite($fp, "{$varname}['keys']['{$key}']['expire']={$value['expire']};\n");
                     }
                 }
             }
         }
-        fwrite($fp, "?>");
+        fwrite($fp, '?>');
         flock($fp, LOCK_UN);
 
         fclose($fp);

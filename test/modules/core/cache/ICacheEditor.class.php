@@ -6,7 +6,7 @@
  * @version 0.2.20120220
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
- * @copyright &copy; 2010-2012 InterBox Core 1.2 for PHP, GuZhiji Studio
+ * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.cache
  */
 interface ICacheEditor {

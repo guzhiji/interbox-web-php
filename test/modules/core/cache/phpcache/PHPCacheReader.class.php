@@ -7,7 +7,7 @@
  * @version 0.8.20120220
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
- * @copyright &copy; 2010-2012 InterBox Core 1.2 for PHP, GuZhiji Studio
+ * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.cache.phpcache
  */
 class PHPCacheReader implements ICacheReader {
@@ -88,36 +88,36 @@ class PHPCacheReader implements ICacheReader {
         }
 
         //check expiry time for the group
-        if ($notblocked && isset($cd["expire"]) && $cd["expire"] < time()) {
+        if ($notblocked && isset($cd['expire']) && $cd['expire'] < time()) {
             return $this->GetRefreshedValue($key);
         }
 
         //check key
-        if (!isset($cd["keys"]))
+        if (!isset($cd['keys']))
             return $this->GetRefreshedValue($key); //return NULL;
-        if (!isset($cd["keys"][$key]))
+        if (!isset($cd['keys'][$key]))
             return $this->GetRefreshedValue($key); //return NULL;
-        $cd = &$cd["keys"][$key];
+        $cd = &$cd['keys'][$key];
 
         //check version
         if ($notblocked &&
-                isset($cd["version"]) &&
+                isset($cd['version']) &&
                 $version > 0 &&
-                $version > $cd["version"]) {
+                $version > $cd['version']) {
             return $this->GetRefreshedValue($key);
         }
 
         //check expiry time for the key
-        if ($notblocked && isset($cd["expire"]) && $cd["expire"] < time()) {
+        if ($notblocked && isset($cd['expire']) && $cd['expire'] < time()) {
             return $this->GetRefreshedValue($key);
         }
 
         //check value
-        if (isset($cd["value"])) {
-            if (isset($cd["serialized"]) && is_string($cd["value"])) {
-                return unserialize($cd["value"]);
+        if (isset($cd['value'])) {
+            if (isset($cd['serialized']) && is_string($cd['value'])) {
+                return unserialize($cd['value']);
             } else {
-                return $cd["value"];
+                return $cd['value'];
             }
         }
         return NULL;
@@ -133,19 +133,19 @@ class PHPCacheReader implements ICacheReader {
         $cd = &$_cachedData[$this->group];
 
         //check expiry time for the group
-        if (isset($cd["expire"]) && $cd["expire"] < time()) {
+        if (isset($cd['expire']) && $cd['expire'] < time()) {
             return array();
         }
 
         //check key
-        if (!isset($cd["keys"]))
+        if (!isset($cd['keys']))
             return array();
 
         //read all keys
         $keys = array();
-        foreach ($cd["keys"] as $key => $value) {
+        foreach ($cd['keys'] as $key => $value) {
             //check expiry time for the key
-            if (isset($value["expire"]) && $value["expire"] < time())
+            if (isset($value['expire']) && $value['expire'] < time())
                 continue;
             $keys[] = $key;
         }
