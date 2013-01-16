@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.6.20130115
+ * @version 0.7.20130116
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -94,15 +94,15 @@ function GetCachePath($makedir = FALSE, $themeid = NULL, $lang = NULL) {
         $syspath = constant('IBC1_SYSTEM_ROOT');
 
     //get relative path
-    $cachepath = 'cache/' . $themeid . '/' . $lang;
+    $cachepath = "cache/$themeid/$lang";
 
     //validate
     if (is_dir($syspath . $cachepath)) {
         return $syspath . $cachepath;
     } else if ($makedir) {
-        if (!is_dir($syspath . 'cache/' . $themeid))
-            mkdir($syspath . 'cache/' . $themeid);
-        if (mkdir($syspath . $cachepath))
+//        if (!is_dir($syspath . 'cache/' . $themeid))
+//            mkdir($syspath . 'cache/' . $themeid);
+        if (mkdir($syspath . $cachepath, 0777, TRUE))
             return $syspath . $cachepath;
     }
 
@@ -141,8 +141,6 @@ function GetTplPath($filename, $classname = NULL, $themeid = NULL, $lang = NULL)
     else
         $lang = strtolower($lang);
 
-    $dlang = strtolower(constant('IBC1_DEFAULT_LANGUAGE'));
-
     $theme = strval($themeid);
     while (TRUE) {
         if ($theme == '0') {
@@ -158,6 +156,7 @@ function GetTplPath($filename, $classname = NULL, $themeid = NULL, $lang = NULL)
                 return $tplpath;
 
             // not fully supported, needs aid from the default language
+            $dlang = strtolower(constant('IBC1_DEFAULT_LANGUAGE'));
             if ($lang != $dlang) {
                 if ($theme != '0') {
                     // theme-level
@@ -189,9 +188,6 @@ function GetTplPath($filename, $classname = NULL, $themeid = NULL, $lang = NULL)
     }
 }
 
-LoadIBC1Class('ICacheReader', 'cache');
-LoadIBC1Class('PHPCacheReader', 'cache.phpcache');
-
 //-----------------------------------------------------------
 // themes
 //-----------------------------------------------------------
@@ -207,12 +203,17 @@ function GetThemeID() {
     if (isset($GLOBALS[$key]))
         return $GLOBALS[$key];
 
-    $id = strCookie('ThemeID');
+    //get system path
+    $syspath = '';
+    if (defined('IBC1_SYSTEM_ROOT'))
+        $syspath = constant('IBC1_SYSTEM_ROOT');
 
-    if (empty($id))
+    $id = intval(strCookie('ThemeID'));
+
+    if ($id == 0 || is_dir("{$syspath}themes/{$id}"))
+        $GLOBALS[$key] = $id;
+    else // non-existent
         $GLOBALS[$key] = 0; //default & preserved theme id
-    else
-        $GLOBALS[$key] = intval($id);
 
     return $GLOBALS[$key];
 }
@@ -261,9 +262,14 @@ function GetLang() {
     if (isset($GLOBALS[$key]))
         return $GLOBALS[$key];
 
+    //get system path
+    $syspath = '';
+    if (defined('IBC1_SYSTEM_ROOT'))
+        $syspath = constant('IBC1_SYSTEM_ROOT');
+
     //by preference
     $lang = strtolower(strCookie('Language'));
-    if ($lang != '' && is_dir('lang/' . $lang)) {
+    if ($lang != '' && is_dir("{$syspath}lang/{$lang}")) {
         $GLOBALS[$key] = $lang;
         return $lang;
     }
@@ -273,7 +279,7 @@ function GetLang() {
     $l = explode(',', $l[0]);
     foreach ($l as $lang) {
         $lang = strtolower($lang);
-        if (is_dir('lang/' . $lang)) {
+        if (is_dir("{$syspath}lang/{$lang}")) {
             $GLOBALS[$key] = $lang;
             return $lang;
         }
@@ -281,7 +287,7 @@ function GetLang() {
         if ($pos > 0) {
             //e.g. zh-cn
             $lang = substr($lang, 0, $pos);
-            if (is_dir('lang/' . $lang)) {
+            if (is_dir("{$syspath}lang/{$lang}")) {
                 $GLOBALS[$key] = $lang;
                 return $lang;
             }
@@ -299,7 +305,13 @@ function GetLang() {
  * @param string $lang e.g. en, or zh-cn
  */
 function SetLang($lang) {
-    if (is_dir('lang/' . $lang)) {
+
+    //get system path
+    $syspath = '';
+    if (defined('IBC1_SYSTEM_ROOT'))
+        $syspath = constant('IBC1_SYSTEM_ROOT');
+
+    if (is_dir("{$syspath}lang/{$lang}")) {
         $GLOBALS['IBC1_Language'] = $lang;
         setcookie(IBC1_PREFIX . '_Language', $lang, time() + 7 * 24 * 60 * 60);
     }
@@ -320,7 +332,17 @@ function SetLang($lang) {
  * </code> 
  */
 function GetLanguages() {
-    return include GetSysResPath('languages.conf.php', 'lang');
+    $key = 'IBC1_Languages';
+    if (isset($GLOBALS[$key]))
+        return $GLOBALS[$key];
+    $GLOBALS[$key] = include GetSysResPath('languages.conf.php', 'lang');
+    return $GLOBALS[$key];
+}
+
+function GetLangName() {
+    $l = GetLanguages();
+    $code = GetLang();
+    return $l[$code];
 }
 
 /**
@@ -344,18 +366,23 @@ function GetLangData($key, $group = NULL) {
     else
         $group = $lang . '_' . $group;
 
-    // load a reader for the group if not existing
-    $reader = &$GLOBALS['IBC1_LangDataReader'];
-    if (!isset($reader) || !isset($reader[$group])) {
-        $reader[$group] = new PHPCacheReader("lang/$lang/$group.lang.php", $group);
-    }
-    // read data
-    return $reader[$group]->GetValue($key);
+    $data = &$GLOBALS['IBC1_LangData'];
+    if (!isset($data) || !isset($data[$group]))
+        $data[$group] = include GetSysResPath("$group.lang.php", "lang/$lang");
+
+    if (isset($data[$group][$key]))
+        return $data[$group][$key];
+
+    return NULL;
 }
 
 //-----------------------------------------------------------
 // configurations
 //-----------------------------------------------------------
+
+LoadIBC1Class('ICacheReader', 'cache');
+LoadIBC1Class('PHPCacheReader', 'cache.phpcache');
+
 /**
  * reads a value associated with the given key in the config file
  *
@@ -441,6 +468,47 @@ function GetTemplate($tplname, $classname = NULL, $themeid = NULL, $lang = NULL)
 //-----------------------------------------------------------
 // caching related
 //-----------------------------------------------------------
+
+
+LoadIBC1Class('ICacheProvider', 'cache');
+
+class DefaultBoxCacheProvider implements ICacheProvider {
+
+    private $editor;
+    private $reader;
+
+    /**
+     *
+     * @param string $group
+     * @return ICacheEditor 
+     */
+    public function GetEditor($group) {
+        if (!isset($this->editor[$group])) {
+            $filepath = GetCachePath(TRUE) . "/{$group}.cache.php";
+            LoadIBC1Class('ICacheEditor', 'cache');
+            LoadIBC1Class('PHPCacheEditor', 'cache.phpcache');
+            $this->editor[$group] = new PHPCacheEditor($filepath, $group);
+        }
+        return $this->editor[$group];
+    }
+
+    /**
+     *
+     * @param string $group
+     * @return ICacheReader 
+     */
+    public function GetReader($group) {
+        if (!isset($this->reader[$group])) {
+            $filepath = GetCachePath(TRUE) . "/{$group}.cache.php";
+            LoadIBC1Class('ICacheReader', 'cache');
+            LoadIBC1Class('PHPCacheReader', 'cache.phpcache');
+            $this->reader[$group] = new PHPCacheReader($filepath, $group);
+        }
+        return $this->reader[$group];
+    }
+
+}
+
 /**
  * checks data version with the current up-to-date version stored somewhere
  * in the system for the necessity to refresh the data to be cached
@@ -509,22 +577,28 @@ function GenerateCacheId($name, $factors = NULL) {
  * remove all cached files 
  */
 function ClearCache() {
+
+    //get system path
+    $syspath = '';
+    if (defined('IBC1_SYSTEM_ROOT'))
+        $syspath = constant('IBC1_SYSTEM_ROOT');
+
     $themes = array_keys(GetThemes());
     foreach ($themes as $id) {
-        if (is_dir('cache/' . $id)) {
-            $languages = dir('cache/' . $id);
+        if (is_dir("{$syspath}cache/{$id}")) {
+            $languages = dir("{$syspath}cache/{$id}");
             while (FALSE != ($lang = $languages->read())) {
                 if (substr($lang, 0, 1) == '.') // omit '.','..','.xxx'
                     continue;
-                $files = dir("cache/$id/$lang");
+                $files = dir("{$syspath}cache/{$id}/{$lang}");
                 while (FALSE != ($file = $files->read())) {
                     if (substr($file, 0, 1) == '.') // omit '.','..','.xxx'
                         continue;
-                    unlink("cache/$id/$lang/$file");
+                    unlink("{$syspath}cache/{$id}/{$lang}/{$file}");
                 }
-                rmdir("cache/$id/$lang");
+                rmdir("{$syspath}cache/{$id}/{$lang}");
             }
-            rmdir('cache/' . $id);
+            rmdir("{$syspath}cache/{$id}");
         }
     }
 }
@@ -536,13 +610,13 @@ function ClearCache() {
 /**
  * a generic page model, based on a simple php string template
  *
- * @version 0.11.20130115
+ * @version 0.12.20130116
  */
 abstract class PageModel extends BoxModel {
 
     private $_title = '';
-    private $_keywords;
-    private $_description;
+    private $_keywords = '';
+    private $_description = '';
     private $_meta = '';
     private $_css = '';
     private $_cssfile = '';
@@ -559,19 +633,8 @@ abstract class PageModel extends BoxModel {
     function __construct($pagetpl, $classname = NULL) {
         parent::__construct(empty($classname) ? __CLASS__ : $classname);
         $this->tplName = $pagetpl;
-        LoadIBC1Class('WordList', 'util');
-        $this->_keywords = new WordList();
-        $this->_description = new WordList();
-        //$this->Initialize();
         $this->Before(NULL);
     }
-
-    /**
-     * automatically called in the end of constructing process
-     *
-     *  e.g. start timer
-     */
-    //abstract protected function Initialize();
 
     /**
      * invoke functions requested by the client and registered in the
@@ -692,13 +755,6 @@ abstract class PageModel extends BoxModel {
     }
 
     /**
-     * automatically invoked when outputing HTML
-     *
-     * e.g. set page header/footer, stop timer
-     */
-    //abstract protected function Finalize();
-
-    /**
      * add a box to a field of its parent
      *
      * @param BoxModel $box
@@ -732,8 +788,8 @@ abstract class PageModel extends BoxModel {
      *
      * @param string $keywords
      */
-    public function AddKeywords($keywords) {
-        $this->_keywords->AddWords($keywords);
+    public function SetKeywords($keywords) {
+        $this->_keywords = htmlspecialchars($keywords);
     }
 
     /**
@@ -741,8 +797,8 @@ abstract class PageModel extends BoxModel {
      *
      * @param string $desc
      */
-    public function AppendDescription($desc) {
-        $this->_description->AddWords($desc);
+    public function SetDescription($desc) {
+        $this->_description = htmlspecialchars($desc);
     }
 
     /**
@@ -925,13 +981,11 @@ abstract class PageModel extends BoxModel {
         $head.=$this->_meta;
         //head END
         //output
-        $this->SetField('Keywords', $this->_keywords->GetWords());
-        $this->SetField('Description', $this->_description->GetWords());
+        $this->SetField('Keywords', $this->_keywords);
+        $this->SetField('Description', $this->_description);
         $this->SetField('Title', $this->_title);
         $this->SetField('Head', $head);
-        //$this->Finalize();
         $this->After(NULL);
-        //return $this->TransformTpl($this->tplName, $this->_fields);
         return parent::GetHTML();
     }
 
@@ -1003,7 +1057,7 @@ abstract class ProcessModel {
 /**
  * a box container in the Page-Process-Box model
  *
- * @version 0.9.20130115
+ * @version 0.10.20130116
  */
 abstract class BoxModel {
 
@@ -1050,7 +1104,8 @@ abstract class BoxModel {
      * @var array 
      */
     private $_fields = array();
-    private $_cachereader = NULL;
+    private $_cacheReader = NULL;
+    private static $_cacheProvider;
 
     /**
      * name of the class (extended class), 
@@ -1087,6 +1142,23 @@ abstract class BoxModel {
     }
 
     /**
+     *
+     * @return ICacheProvider 
+     */
+    private static function GetCacheProvider() {
+        $p = &self::$_cacheProvider;
+        if (empty($p)) {
+            $module = &$GLOBALS['IBC1_FRAMEWORK_CACHING'];
+            if (isset($module)) {
+                require call_user_func_array('GetSysResPath', $module);
+                $p = new $module[0]();
+            }
+            $p = new DefaultBoxCacheProvider();
+        }
+        return $p;
+    }
+
+    /**
      * change box status to hidden 
      */
     final protected function Hide() {
@@ -1113,32 +1185,6 @@ abstract class BoxModel {
     }
 
     /**
-     *
-     * @return null|ICacheEditor 
-     */
-    protected function LoadCacheWriter() {
-        if (empty($this->cacheGroup))
-            return NULL;
-        $filepath = GetCachePath(TRUE) . "/{$this->cacheGroup}.cache.php";
-        LoadIBC1Class('ICacheEditor', 'cache');
-        LoadIBC1Class('PHPCacheEditor', 'cache.phpcache');
-        return new PHPCacheEditor($filepath, $this->cacheGroup);
-    }
-
-    /**
-     *
-     * @return null|ICacheReader 
-     */
-    protected function LoadCacheReader() {
-        if (empty($this->cacheGroup))
-            return NULL;
-        $filepath = GetCachePath(TRUE) . "/{$this->cacheGroup}.cache.php";
-        //LoadIBC1Class('ICacheReader', 'cache');
-        //LoadIBC1Class('PHPCacheReader', 'cache.phpcache');
-        return new PHPCacheReader($filepath, $this->cacheGroup);
-    }
-
-    /**
      * @return string 
      */
     abstract protected function LoadContent();
@@ -1153,6 +1199,10 @@ abstract class BoxModel {
 
     final public function GetLang() {
         return GetLang();
+    }
+
+    final public function GetLangName() {
+        return GetLangName();
     }
 
     final public function GetLangData($key, $group = NULL) {
@@ -1273,23 +1323,25 @@ abstract class BoxModel {
                 }
 
                 // write into cache storage
-                try {
-                    $ce = $this->LoadCacheWriter();
-                    if (!empty($ce)) {
-                        $ce->SetValue(
-                                $this->cacheKey, $html, $this->cacheTimeout, $this->cacheVersion > 0
-                        );
-                        $ce->Save();
+                if (!empty($this->cacheGroup)) {
+                    try {
+                        $cp = self::GetCacheProvider();
+                        $ce = $cp->GetEditor($this->cacheGroup);
+                        if (!empty($ce)) {
+                            $ce->SetValue(
+                                    $this->cacheKey, $html, $this->cacheTimeout, $this->cacheVersion > 0
+                            );
+                            $ce->Save();
+                        }
+                    } catch (Exception $ex) {
+                        
                     }
-                } catch (Exception $ex) {
-                    
                 }
-
                 break;
 
             case BoxModel::STATUS_USECACHE:
 
-                $cr = $this->_cachereader;
+                $cr = $this->_cacheReader;
                 if (!empty($cr)) {
                     $cr->SetRefreshFunction(NULL);
                     $html = $cr->GetValue($this->cacheKey, 0, 0);
@@ -1327,9 +1379,11 @@ abstract class BoxModel {
             default:
 
                 //read from cache storage
-                $this->_cachereader = $this->LoadCacheReader();
-                $cr = $this->_cachereader;
-                if (!empty($cr)) {
+                if (!empty($this->cacheGroup)) {
+                    $cp = self::GetCacheProvider();
+                    $this->_cacheReader = $cp->GetReader($this->cacheGroup);
+                    $cr = $this->_cacheReader;
+
                     if ($this->status == BoxModel::STATUS_USECACHE) {
                         $cr->SetRefreshFunction(NULL);
                         return $cr->GetValue($this->cacheKey, 0, 0);
