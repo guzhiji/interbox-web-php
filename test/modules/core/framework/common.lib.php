@@ -415,23 +415,26 @@ function GetConfigValue($key, $group = NULL) {
  */
 $GLOBALS['IBC1_TEMPLATE_FORMATTING'] = array(
     'html' => 'filterhtml',
-    'text' => 'htmlspecialchars', //TODO nl2br or not
+    'text' => 'text2html',
     'jsstr' => 'toScriptString',
     'urlparam' => 'urlencode',
     'int' => 'intval',
-    'float' => 'floatval'
+    'float' => 'floatval',
+    'date' => 'FormatDate',
+    'time' => 'FormatTime',
+    'datetime' => 'FormatDateTime'
 );
 
-function PerformFormatting($func, $value) {
+function FormatTplVar($datatype, $value) {
     $funclist = &$GLOBALS['IBC1_TEMPLATE_FORMATTING'];
-    if (isset($funclist[$func])) {
-        return call_user_func($funclist[$func], $value);
+    if (isset($funclist[$datatype])) {
+        return call_user_func($funclist[$datatype], $value);
     }
     return $value;
 }
 
 /**
- * format fields for a static template
+ * format fields for a template
  * 
  * @see $GLOBALS['IBC1_TEMPLATE_FORMATTING']
  * @param array $vars 
@@ -1220,7 +1223,7 @@ abstract class BoxModel {
     }
 
     final public function Format($func, $value) {
-        return PerformFormatting($func, $value);
+        return FormatTplVar($func, $value);
     }
 
     /**
