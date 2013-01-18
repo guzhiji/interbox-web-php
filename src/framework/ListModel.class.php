@@ -3,7 +3,7 @@
 /**
  * A template model for a list, based on a simple php string template.
  * 
- * @version 0.5.20130115
+ * @version 0.6.20130118
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.framework
@@ -43,6 +43,7 @@ abstract class ListModel extends BoxModel {
      */
     function __construct($itemTplName, $classname = NULL) {
         parent::__construct(empty($classname) ? __CLASS__ : $classname);
+        $this->parentClassName = __CLASS__;
         $this->_itemtpl = GetTemplate($itemTplName, $this->className);
         $this->_itemempty = '';
         $this->_items = '';
@@ -56,7 +57,7 @@ abstract class ListModel extends BoxModel {
      * @param array $vars   optional
      */
     public function SetContainer($tplname, array $vars = array()) {
-        $this->tplName = $tplname;
+        $this->containerTplName = $tplname;
         foreach ($vars as $field => $content)
             $this->SetField($field, $content);
     }

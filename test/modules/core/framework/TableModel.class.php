@@ -3,7 +3,7 @@
 /**
  * A generic template model for a table, based on a simple php string template.
  * TODO debug TableModel
- * @version 0.5.20130115
+ * @version 0.6.20130118
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.framework
@@ -78,6 +78,7 @@ abstract class TableModel extends BoxModel {
      */
     function __construct($itemTplName, $rowTplName, $tableTplName, $coln, $classname = NULL) {
         parent::__construct(empty($classname) ? __CLASS__ : $classname);
+        $this->parentClassName = __CLASS__;
         $this->_coln = intval($coln);
         if ($this->_coln < 1)
             $this->_coln = 1;
@@ -89,7 +90,7 @@ abstract class TableModel extends BoxModel {
         $this->_itemrest = '';
         $this->_itemtpl = GetTemplate($itemTplName, $classname);
         $this->_rowtpl = GetTemplate($rowTplName, $classname);
-        $this->tplName = $tableTplName;
+        $this->containerTplName = $tableTplName;
         $this->className = $classname;
         $this->contentFieldName = 'TableContent';
     }

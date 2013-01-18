@@ -4,7 +4,6 @@ class CachedBox extends BoxModel {
 
     function __construct($args) {
         parent::__construct(__CLASS__);
-        $this->tplName = 'box';
         switch (isset($args['mode']) ? $args['mode'] : '') {
             case 'versioning':
                 $this->cacheGroup = 'caching_versioning';
@@ -29,7 +28,9 @@ class CachedBox extends BoxModel {
 
     protected function LoadContent() {
         usleep(500000);
-        return time();
+        return $this->TransformTpl('box', array(
+                    'Content' => time()
+                ));
     }
 
     public function After($page) {

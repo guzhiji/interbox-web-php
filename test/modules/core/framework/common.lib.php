@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.7.20130116
+ * @version 0.8.20130118
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -611,9 +611,9 @@ function ClearCache() {
 //-----------------------------------------------------------
 
 /**
- * a generic page model, based on a simple php string template
+ * a generic page model
  *
- * @version 0.12.20130116
+ * @version 0.13.20130118
  */
 abstract class PageModel extends BoxModel {
 
@@ -635,7 +635,8 @@ abstract class PageModel extends BoxModel {
      */
     function __construct($pagetpl, $classname = NULL) {
         parent::__construct(empty($classname) ? __CLASS__ : $classname);
-        $this->tplName = $pagetpl;
+        $this->containerTplName = $pagetpl;
+        $this->parentClassName = __CLASS__;
         $this->Before(NULL);
     }
 
@@ -1060,7 +1061,7 @@ abstract class ProcessModel {
 /**
  * a box container in the Page-Process-Box model
  *
- * @version 0.10.20130116
+ * @version 0.11.20130118
  */
 abstract class BoxModel {
 
@@ -1116,13 +1117,14 @@ abstract class BoxModel {
      * @var string 
      */
     protected $className;
+    protected $parentClassName;
 
     /**
      * template name, 
      * e.g. templates/[class name]/[lang]/{{template name}}.tpl
      * @var string 
      */
-    protected $tplName;
+    protected $containerTplName;
     protected $cacheTimeout;
     protected $cacheGroup;
     protected $cacheKey;
@@ -1135,7 +1137,8 @@ abstract class BoxModel {
         $this->status = BoxModel::STATUS_NORMAL;
         $this->className = empty($classname) ? __CLASS__ : $classname;
         $this->boxArgs = $args;
-        $this->tplName = '';
+        $this->parentClassName = __CLASS__;
+        $this->containerTplName = '';
         $this->cacheGroup = '';
         $this->cacheKey = '';
         $this->cacheTimeout = 0;
@@ -1232,14 +1235,12 @@ abstract class BoxModel {
      * @param string $tplname
      * @param array $vars
      * @param string $classname
-     * @param int $themeid
-     * @param string $lang
      * @return string
      * @see GetTemplate()
      * @see Tpl2HTML()
      */
-    final public function TransformTpl($tplname, $vars) {
-        $tpl = GetTemplate($tplname, $this->className);
+    final public function TransformTpl($tplname, $vars, $classname = NULL) {
+        $tpl = GetTemplate($tplname, empty($classname) ? $this->className : $classname);
 
         return $this->Tpl2HTML($tpl, $vars);
     }
@@ -1277,10 +1278,11 @@ abstract class BoxModel {
      * 
      * @param string $tplname
      * @param array $vars
+     * @param string $classname
      * @return string
      */
-    final public function RenderPHPTpl($tplname, $vars = array()) {
-        $path = GetTplPath($tplname . '.tpl.php', $this->className);
+    final public function RenderPHPTpl($tplname, $vars = array(), $classname = NULL) {
+        $path = GetTplPath($tplname . '.tpl.php', empty($classname) ? $this->className : $classname);
         if (empty($path) || !is_file($path))
             return '';
         if (!empty($vars)) {
@@ -1318,10 +1320,10 @@ abstract class BoxModel {
         switch ($this->status) {
             case BoxModel::STATUS_NORMAL:
                 // fill content in the template
-                if (!empty($this->tplName)) {
+                if (!empty($this->containerTplName)) {
                     $this->_fields[$this->contentFieldName] = $html;
                     $html = $this->TransformTpl(
-                            $this->tplName, $this->_fields
+                            $this->containerTplName, $this->_fields, $this->parentClassName
                     );
                 }
 

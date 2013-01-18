@@ -2,21 +2,26 @@
 
 class CachingController extends BoxModel {
 
+    private $ms;
+
     function __construct($args) {
-        parent::__construct(__CLASS__);
-        switch (isset($args['mode']) ? $args['mode'] : '') {
-            case 'versioning':
-            case 'timing':
-                $this->tplName = $args['mode'];
-                break;
-            default:
-                $this->tplName = 'nocache';
-                break;
-        }
+        parent::__construct(__CLASS__, $args);
     }
 
     protected function LoadContent() {
-        return '';
+        switch ($this->GetBoxArgument('mode')) {
+            case 'versioning':
+            case 'timing':
+                $tpl = $this->GetBoxArgument('mode');
+                break;
+            default:
+                $tpl = 'nocache';
+                break;
+        }
+        return $this->TransformTpl($tpl, array(
+                    'elapsed' => $this->ms,
+                    'version' => time() + 1
+                ));
     }
 
     public function After($page) {
@@ -25,8 +30,7 @@ class CachingController extends BoxModel {
     }
 
     public function Before($page) {
-        $this->SetField('elapsed', $page->GetElapsedMillis());
-        $this->SetField('version', time() + 1);
+        $this->ms = $page->GetElapsedMillis();
     }
 
 }
