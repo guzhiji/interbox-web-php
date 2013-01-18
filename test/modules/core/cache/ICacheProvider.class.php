@@ -10,11 +10,11 @@
 interface ICacheProvider {
 
     /**
-     *  get a cache editor object.
+     *  get a cache writer object.
      * 
      * @param string $group
      */
-    public function GetEditor($group);
+    public function GetWriter($group);
 
     /**
      * get a cache reader object.

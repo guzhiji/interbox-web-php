@@ -1,7 +1,7 @@
 <?php
 
 /**
- * a cache file editor implemented with php array 
+ * a cache file writer implemented with php array 
  * and serialization features
  * 
  * The editor supports saving basic data types and 
@@ -15,7 +15,7 @@
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.cache.phpcache
  */
-class PHPCacheEditor implements ICacheEditor {
+class PHPCacheWriter implements ICacheWriter {
 
     /**
      * group name

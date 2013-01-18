@@ -477,22 +477,22 @@ LoadIBC1Class('ICacheProvider', 'cache');
 
 class DefaultBoxCacheProvider implements ICacheProvider {
 
-    private $editor;
+    private $writer;
     private $reader;
 
     /**
      *
      * @param string $group
-     * @return ICacheEditor 
+     * @return ICacheWriter 
      */
-    public function GetEditor($group) {
-        if (!isset($this->editor[$group])) {
+    public function GetWriter($group) {
+        if (!isset($this->writer[$group])) {
             $filepath = GetCachePath(TRUE) . "/{$group}.cache.php";
-            LoadIBC1Class('ICacheEditor', 'cache');
-            LoadIBC1Class('PHPCacheEditor', 'cache.phpcache');
-            $this->editor[$group] = new PHPCacheEditor($filepath, $group);
+            LoadIBC1Class('ICacheWriter', 'cache');
+            LoadIBC1Class('PHPCacheWriter', 'cache.phpcache');
+            $this->writer[$group] = new PHPCacheWriter($filepath, $group);
         }
-        return $this->editor[$group];
+        return $this->writer[$group];
     }
 
     /**
@@ -1329,12 +1329,12 @@ abstract class BoxModel {
                 if (!empty($this->cacheGroup)) {
                     try {
                         $cp = self::GetCacheProvider();
-                        $ce = $cp->GetEditor($this->cacheGroup);
-                        if (!empty($ce)) {
-                            $ce->SetValue(
+                        $cw = $cp->GetWriter($this->cacheGroup);
+                        if (!empty($cw)) {
+                            $cw->SetValue(
                                     $this->cacheKey, $html, $this->cacheTimeout, $this->cacheVersion > 0
                             );
-                            $ce->Save();
+                            $cw->Save();
                         }
                     } catch (Exception $ex) {
                         

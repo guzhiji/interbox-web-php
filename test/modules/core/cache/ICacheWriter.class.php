@@ -9,7 +9,7 @@
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
  * @package interbox.core.cache
  */
-interface ICacheEditor {
+interface ICacheWriter {
 
     /**
      * set a value to a key with an optional length of its lifetime

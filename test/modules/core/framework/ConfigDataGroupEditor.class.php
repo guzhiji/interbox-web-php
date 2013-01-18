@@ -20,9 +20,9 @@ class ConfigDataGroupEditor extends AbstractDataGroupEditor {
             $group = 'conf_' . $group;
 
         // load a writer
-        LoadIBC1Class('ICacheEditor', 'cache');
-        LoadIBC1Class('PHPCacheEditor', 'cache.phpcache');
-        $this->editor = new PHPCacheEditor("conf/$group.conf.php", $group);
+        LoadIBC1Class('ICacheWriter', 'cache');
+        LoadIBC1Class('PHPCacheWriter', 'cache.phpcache');
+        $this->editor = new PHPCacheWriter("conf/$group.conf.php", $group);
     }
 
 }
