@@ -599,8 +599,10 @@ function ClearCache() {
                         continue;
                     unlink("{$syspath}cache/{$id}/{$lang}/{$file}");
                 }
+                $files->close();
                 rmdir("{$syspath}cache/{$id}/{$lang}");
             }
+            $languages->close();
             rmdir("{$syspath}cache/{$id}");
         }
     }
