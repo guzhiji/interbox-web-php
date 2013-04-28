@@ -275,21 +275,24 @@ function GetLang() {
     }
 
     //by browser
-    $l = explode(';', $_SERVER['HTTP_ACCEPT_LANGUAGE']);
-    $l = explode(',', $l[0]);
-    foreach ($l as $lang) {
-        $lang = strtolower($lang);
-        if (is_dir("{$syspath}lang/{$lang}")) {
-            $GLOBALS[$key] = $lang;
-            return $lang;
-        }
-        $pos = strpos($lang, '-');
-        if ($pos > 0) {
-            //e.g. zh-cn
-            $lang = substr($lang, 0, $pos);
+    $accepted = &$_SERVER['HTTP_ACCEPT_LANGUAGE'];
+    if (isset($accepted)) {
+        $l = explode(';', $accepted);
+        $l = explode(',', $l[0]);
+        foreach ($l as $lang) {
+            $lang = strtolower($lang);
             if (is_dir("{$syspath}lang/{$lang}")) {
                 $GLOBALS[$key] = $lang;
                 return $lang;
+            }
+            $pos = strpos($lang, '-');
+            if ($pos > 0) {
+                //e.g. zh-cn
+                $lang = substr($lang, 0, $pos);
+                if (is_dir("{$syspath}lang/{$lang}")) {
+                    $GLOBALS[$key] = $lang;
+                    return $lang;
+                }
             }
         }
     }
@@ -599,8 +602,10 @@ function ClearCache() {
                         continue;
                     unlink("{$syspath}cache/{$id}/{$lang}/{$file}");
                 }
+                $files->close();
                 rmdir("{$syspath}cache/{$id}/{$lang}");
             }
+            $languages->close();
             rmdir("{$syspath}cache/{$id}");
         }
     }

@@ -108,7 +108,7 @@ class PHPCacheWriter implements ICacheWriter {
         if (!$fp) {
             throw new Exception('cannot open cache file');
         }
-        if (!flock($fp, LOCK_EX)) {
+        if (!flock($fp, LOCK_EX | LOCK_NB)) {
             throw new Exception('cannot lock cache file');
         }
 
