@@ -1234,6 +1234,10 @@ abstract class BoxModel {
         return FormatTplVar($func, $value);
     }
 
+    final public function CreateButton($type, $text, $params = array()) {
+        return CreateButton($type, $text, $params);
+    }
+
     /**
      * reads a template, passes parameters to it and generates HTML
      *
@@ -1406,4 +1410,92 @@ abstract class BoxModel {
         }
     }
 
+}
+
+function CreateButton($type, $text, $params = array()) {
+
+    $att = array();
+
+    if (isset($params['id']))
+        $att['id'] = $params['id'];
+    if (isset($params['tiptext']))
+        $att['title'] = $params['tiptext'];
+
+    if (isset($params['class_selected']) && isset($params['selected']) && $params['selected'])
+        $att['class'] = $params['class_selected'];
+    else if (isset($params['class']))
+        $att['class'] = $params['class'];
+
+    $target = isset($params['target']) ? $params['target'] : '';
+
+    switch ($type) {
+        case 'button':
+
+            if (isset($params['url'])) {
+                $url = str_replace("'", '&#039;', htmlspecialchars($params['url']));
+                switch (strtolower($target)) {
+                    case '_blank':
+                        $att['onclick'] = "window.open('{$url}','','')";
+                        break;
+                    case '':
+                    case '_self':
+                        $att['onclick'] = "window.location='{$url}'";
+                        break;
+                    case 'parent':
+                        $att['onclick'] = "window.parent.location='{$url}'";
+                        break;
+                    default:
+                        $att['onclick'] = "window.parent.{$target}.location='{$url}'";
+                }
+            }
+        // NO break;
+        case 'submit':
+        case 'reset':
+            $att['type'] = $type;
+            $att['value'] = htmlspecialchars($text);
+            if (!isset($params['url']) && isset($params['js']))
+                $att['onclick'] = htmlspecialchars($params['js']);
+
+            break;
+
+        default: //case 'link':
+
+            if (isset($params['url'])) {
+                $url = htmlspecialchars($params['url']);
+                if (!empty($target))
+                    $att['target'] = $target;
+                $att['href'] = $url;
+            } else if (isset($params['js'])) {
+                $att['href'] = 'javascript:' . htmlspecialchars($params['js']);
+            }
+
+            break;
+    }
+
+    if (isset($att['extra'])) {
+        foreach ($att['extra'] as $k => $v)
+            if (!isset($att[$k]))
+                $att[$k] = htmlspecialchars($v);
+    }
+
+    $attributes = '';
+    foreach ($att as $k => $v) {
+        if (!empty($attributes))
+            $attributes .= ' ';
+        $attributes .= "{$k}=\"{$v}\"";
+    }
+
+    switch ($type) {
+        case 'button':
+        case 'submit':
+        case 'reset':
+            return "<input {$attributes} />";
+        default: //case 'link':
+            $text = htmlspecialchars($text);
+            if (isset($params['prefix']))
+                $text = $params['prefix'] . $text; // unfiltered
+            if (isset($params['suffix']))
+                $text .= $params['suffix']; // unfiltered
+            return "<a {$attributes}>{$text}</a>";
+    }
 }

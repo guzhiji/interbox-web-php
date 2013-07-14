@@ -55,12 +55,11 @@ class PHPCacheReader implements ICacheReader {
     }
 
     private function GetRefreshedValue($key) {
-        if ($this->function != NULL) {
-
+        if (!empty($this->function)) {
             //refresh
             //eval($this->function);
             //return call_user_func($this->function);
-            call_user_func($this->function);
+            call_user_func($this->function, $key);// TODO refresh function has to re-write cache
 
             //reload
             $r = new PHPCacheReader($this->cachefile, $this->group);
@@ -69,7 +68,7 @@ class PHPCacheReader implements ICacheReader {
         return NULL;
     }
 
-    public function GetValue($key, $version = 0, $randomfactor = 1) {
+    public function GetValue($key, $version = 0) {
 
         GLOBAL $_cachedData;
 
@@ -78,17 +77,8 @@ class PHPCacheReader implements ICacheReader {
 //            return NULL;
         $cd = &$_cachedData[$this->group];
 
-        //$process random factor
-        $notblocked = FALSE;
-        if ($randomfactor == 1 //==1 --> do refresh it
-                || ($randomfactor > 0 //==0 --> don't refresh it
-                && mt_rand(1, $randomfactor) == 1) //-->do random
-        ) {
-            $notblocked = TRUE;
-        }
-
         //check expiry time for the group
-        if ($notblocked && isset($cd['expire']) && $cd['expire'] < time()) {
+        if (isset($cd['expire']) && $cd['expire'] < time()) {
             return $this->GetRefreshedValue($key);
         }
 
@@ -100,15 +90,14 @@ class PHPCacheReader implements ICacheReader {
         $cd = &$cd['keys'][$key];
 
         //check version
-        if ($notblocked &&
-                isset($cd['version']) &&
+        if (isset($cd['version']) &&
                 $version > 0 &&
                 $version > $cd['version']) {
             return $this->GetRefreshedValue($key);
         }
 
         //check expiry time for the key
-        if ($notblocked && isset($cd['expire']) && $cd['expire'] < time()) {
+        if (isset($cd['expire']) && $cd['expire'] < time()) {
             return $this->GetRefreshedValue($key);
         }
 

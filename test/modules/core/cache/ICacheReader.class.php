@@ -25,16 +25,9 @@ interface ICacheReader {
      * @param int $version  the known latest version number to be compared with
      * the version number stored with data, typically using values returned by 
      * the php function time()
-     * @param int $randomfactor     a parameter to control overall number of
-     *  refreshes by generating random numbers
-     * <ul>
-     * <li>=0 - do not refresh data, use the old version</li>
-     * <li>=1 - refresh data if necessary</li>
-     * <li>&gt;1 - refresh data at the possibility of 1/randomfactor</li>
-     * </ul>
      * @return mixed 
      */
-    public function GetValue($key, $version = 0, $randomfactor = 1);
+    public function GetValue($key, $version = 0);
 
     /**
      * get an array of all available keys
