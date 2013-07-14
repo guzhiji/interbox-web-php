@@ -1134,7 +1134,6 @@ abstract class BoxModel {
     protected $cacheGroup;
     protected $cacheKey;
     protected $cacheVersion;
-    protected $cacheRandFactor;
     protected $contentFieldName;
     protected $boxArgs;
 
@@ -1148,7 +1147,6 @@ abstract class BoxModel {
         $this->cacheKey = '';
         $this->cacheTimeout = 0;
         $this->cacheVersion = 0;
-        $this->cacheRandFactor = 1;
         $this->contentFieldName = 'Content';
     }
 
@@ -1358,7 +1356,7 @@ abstract class BoxModel {
                 $cr = $this->_cacheReader;
                 if (!empty($cr)) {
                     $cr->SetRefreshFunction(NULL);
-                    $html = $cr->GetValue($this->cacheKey, 0, 0);
+                    $html = $cr->GetValue($this->cacheKey, 0);
                 }
 
                 break;
@@ -1400,10 +1398,10 @@ abstract class BoxModel {
 
                     if ($this->status == BoxModel::STATUS_USECACHE) {
                         $cr->SetRefreshFunction(NULL);
-                        return $cr->GetValue($this->cacheKey, 0, 0);
+                        return $cr->GetValue($this->cacheKey, 0);
                     } else {
                         $cr->SetRefreshFunction(array($this, 'GetRefreshedHTML'));
-                        return $cr->GetValue($this->cacheKey, $this->cacheVersion, $this->cacheRandFactor);
+                        return $cr->GetValue($this->cacheKey, $this->cacheVersion);
                     }
                 }
                 return $this->GetRefreshedHTML();
