@@ -8,14 +8,6 @@ class TestPage extends PageModel {
         parent::__construct('page1');
     }
 
-    protected function Finalize() {
-        
-    }
-
-    protected function Initialize() {
-        
-    }
-
     public function ShowHomeButton($url = NULL) {
         if (empty($url)) {
             $this->SetField('LeftButton', $this->TransformTpl('button_home', array(

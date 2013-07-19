@@ -40,4 +40,8 @@ class DeleteConfig extends ProcessModel {
         }
     }
 
+    public function Auth($page) {
+        return TRUE;
+    }
+
 }

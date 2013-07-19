@@ -11,4 +11,8 @@ class ClearCachedData extends ProcessModel {
                 ));
     }
 
+    public function Auth($page) {
+        return TRUE;
+    }
+
 }

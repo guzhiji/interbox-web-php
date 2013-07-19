@@ -24,4 +24,8 @@ class SaveConfig extends ProcessModel {
         }
     }
 
+    public function Auth($page) {
+        return TRUE;
+    }
+
 }
