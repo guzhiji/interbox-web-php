@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.8.20130118
+ * @version 0.9.20130719
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -376,7 +376,7 @@ function GetLangData($key, $group = NULL) {
     if (isset($data[$group][$key]))
         return $data[$group][$key];
 
-    return NULL;
+    return $key;
 }
 
 //-----------------------------------------------------------
@@ -618,7 +618,7 @@ function ClearCache() {
 /**
  * a generic page model
  *
- * @version 0.13.20130118
+ * @version 0.14.20130719
  */
 abstract class PageModel extends BoxModel {
 
@@ -684,8 +684,9 @@ abstract class PageModel extends BoxModel {
      *      )
      * )
      * </code>
+     * @return bool     whether something found to display or run
      */
-    final public function Prepare(array $config) {
+    final public function Route(array $config) {
 
         //default parameter names for module & function
         $module = 'module';
@@ -710,7 +711,7 @@ abstract class PageModel extends BoxModel {
             //?module=[module name]
             $modconf = &$config['modules'];
             if (isset($modconf[$module_name])) {
-                return $this->Prepare($modconf[$module_name]);
+                return $this->Route($modconf[$module_name]);
             }
         } else if (!empty($function_name) && isset($config['functions'])) {
 
@@ -719,26 +720,13 @@ abstract class PageModel extends BoxModel {
             $funconf = &$config['functions'];
             if (isset($funconf[$function_name])) {
 
-                $proconf = &$funconf[$function_name];
-                //a process should run only once
-                require GetSysResPath($proconf[0] . '.class.php', 'modules/processes');
-                $proc = new $proconf[0]($proconf[1]);
-                $proc->module = $module_name;
-                $proc->function = $function_name;
-                $output = $proc->Process();
-                switch ($proc->status) {
-                    case ProcessModel::STATUS_NOTHING:
-                        return FALSE; //silent & no output
-                    case ProcessModel::STATUS_BOX:
-                        require_once GetSysResPath($output[0] . '.class.php', 'modules/boxes');
-                        $this->AddBox(new $output[0]($output[1]), NULL, $module_name);
-                        return TRUE;
-                    case ProcessModel::STATUS_JSON:
-                        header('Content-Type: text/plain');
-                        echo json_encode($output);
-                    case ProcessModel::STATUS_RESOURCE:
-                        exit;
-                }
+                //a process should only run once
+                $this->CallProcess(
+                        $this->ConstructProcess($funconf[$function_name]), // construct an object of the Process
+                        $function_name, $module_name
+                );
+
+                return TRUE;
             }
         }
 
@@ -746,21 +734,30 @@ abstract class PageModel extends BoxModel {
         if (isset($config['box'])) {
 
             //a single box view
-            require_once GetSysResPath($config['box'][0] . '.class.php', 'modules/boxes');
-            $this->AddBox(new $config['box'][0]($config['box'][1]), NULL, $module_name);
+            $this->AddBox($this->ConstructBox($config['box']), NULL, $module_name);
 
             return TRUE;
         } else if (isset($config['boxes'])) {
 
             //an array of boxes
-            foreach ($config['boxes'] as $f => $b) {
-                require_once GetSysResPath($b[0] . '.class.php', 'modules/boxes');
-                $this->AddBox(new $b[0]($b[1]), is_string($f) ? $f : NULL, $module_name);
-            }
+            foreach ($config['boxes'] as $f => $b)
+                $this->AddBox($this->ConstructBox($b), is_string($f) ? $f : NULL, $module_name);
 
             return TRUE;
         }
+
+        // nothing found
         return FALSE;
+    }
+
+    private function ConstructBox(array $box) {
+        require_once GetSysResPath($box[0] . '.class.php', 'modules/boxes');
+        return new $box[0]($box[1]);
+    }
+
+    private function ConstructProcess(array $proc) {
+        require GetSysResPath($proc[0] . '.class.php', 'modules/processes');
+        return new $proc[0]($proc[1]);
     }
 
     /**
@@ -774,13 +771,46 @@ abstract class PageModel extends BoxModel {
         if (empty($field))
             $field = $this->contentFieldName;
         $box->module = $module;
+        // before rendering
         $box->Before($this);
-        $html = $box->GetHTML();
-        if (isset($this->_boxes[$field]))
-            $this->_boxes[$field].= $html;
-        else
-            $this->_boxes[$field] = $html;
-        $box->After($this);
+        // check status
+        if ($box->status == BoxModel::STATUS_FORWARD) {
+            $this->AddBox($this->ConstructBox($box->forwardbox), $field, $module);
+        } else {
+            // render box
+            $html = $box->GetHTML();
+            if (isset($this->_boxes[$field]))
+                $this->_boxes[$field].= $html;
+            else
+                $this->_boxes[$field] = $html;
+            // after rendering
+            if ($box->status != BoxModel::STATUS_HIDDEN) {
+                $box->After($this);
+                // check status
+                if ($box->status == BoxModel::STATUS_FORWARD)
+                    $this->AddBox($this->ConstructBox($box->forwardbox), $field, $module);
+            }
+        }
+    }
+
+    final public function CallProcess(ProcessModel $proc, $function, $module = '') {
+        $proc->module = $module;
+        $proc->function = $function;
+        if ($proc->Auth($this)) {
+            $output = $proc->Process();
+            switch ($proc->mode) {
+                case ProcessModel::MODE_BOX:
+                    $this->AddBox($this->ConstructBox($output), NULL, $module);
+                    break;
+                case ProcessModel::MODE_JSON:
+                    header('Content-Type: text/plain');
+                    echo json_encode($output);
+                case ProcessModel::MODE_RESOURCE:
+                    exit;
+                case ProcessModel::MODE_NOTHING:
+                    break; //silent & no output
+            }
+        } // TODO else?
     }
 
     /**
@@ -1000,6 +1030,7 @@ abstract class PageModel extends BoxModel {
 
     final public function Show() {
         echo $this->GetHTML();
+        exit;
     }
 
 }
@@ -1007,16 +1038,16 @@ abstract class PageModel extends BoxModel {
 /**
  * an abstract process for the Page-Process-Box model
  *
- * @version 0.3.20130115
+ * @version 0.4.20130719
  */
 abstract class ProcessModel {
 
-    const STATUS_NOTHING = 0;
-    const STATUS_BOX = 1;
-    const STATUS_JSON = 2;
-    const STATUS_RESOURCE = 3;
+    const MODE_NOTHING = 0;
+    const MODE_BOX = 1;
+    const MODE_JSON = 2;
+    const MODE_RESOURCE = 3;
 
-    public $status = ProcessModel::STATUS_NOTHING;
+    public $mode = ProcessModel::MODE_NOTHING;
 
     /**
      * name of the module where it is deployed in the page
@@ -1029,6 +1060,14 @@ abstract class ProcessModel {
      * @var string 
      */
     public $function;
+
+    /**
+     * authenticate for whether proceed 
+     * 
+     * @param PageModel $page   the page that the process belongs to
+     * @return bool     whether proceed with the Process() method
+     */
+    abstract public function Auth($page);
 
     /**
      * @return mixed
@@ -1047,17 +1086,17 @@ abstract class ProcessModel {
     abstract public function Process();
 
     public function OutputBox($box, array $params) {
-        $this->status = ProcessModel::STATUS_BOX;
+        $this->mode = ProcessModel::MODE_BOX;
         return array($box, $params);
     }
 
     public function OutputJSON($data = NULL) {
-        $this->status = ProcessModel::STATUS_JSON;
+        $this->mode = ProcessModel::MODE_JSON;
         return $data;
     }
 
     public function OutputRes() {
-        $this->status = ProcessModel::STATUS_RESOURCE;
+        $this->mode = ProcessModel::MODE_RESOURCE;
         return NULL;
     }
 
@@ -1091,16 +1130,10 @@ abstract class BoxModel {
     public $module;
 
     /**
-     * name of a Box to be forwarded
+     * name and parameters of the Box to be forwarded
      * @var string
      */
-    private $_forwardbox;
-
-    /**
-     * parameters for constructing the Box
-     * @var array
-     */
-    private $_forwardbox_params;
+    public $forwardbox;
 
     /**
      * a hash map of fields and their contents that will fill in the template.
@@ -1182,8 +1215,7 @@ abstract class BoxModel {
      */
     final protected function Forward($box, $params) {
         $this->status = BoxModel::STATUS_FORWARD;
-        $this->_forwardbox = $box;
-        $this->_forwardbox_params = $params;
+        $this->forwardbox = array($box, $params);
     }
 
     /**
@@ -1308,17 +1340,6 @@ abstract class BoxModel {
             $this->_fields[$fieldname] = $value;
     }
 
-    /**
-     * @return string 
-     */
-    private function LoadForwardedContent() {
-        if (empty($this->_forwardbox))
-            return '';
-        require_once GetSysResPath($this->_forwardbox . '.class.php', 'modules/boxes');
-        $box = new $this->_forwardbox($this->_forwardbox_params);
-        return $box->GetHTML();
-    }
-
     final public function GetRefreshedHTML() {
 
         $html = $this->LoadContent();
@@ -1361,11 +1382,7 @@ abstract class BoxModel {
 
                 break;
 
-            case BoxModel::STATUS_FORWARD:
-
-                $html = $this->LoadForwardedContent();
-                break;
-
+            case BoxModel::STATUS_FORWARD: // forward by the caller
             default: // Box::STATUS_HIDDEN
 
                 $html = '';
@@ -1380,10 +1397,7 @@ abstract class BoxModel {
 
         //status may change in Before()
         switch ($this->status) {
-            case BoxModel::STATUS_FORWARD:
-
-                return $this->LoadForwardedContent();
-
+            case BoxModel::STATUS_FORWARD: // forward by the caller
             case BoxModel::STATUS_HIDDEN:
 
                 return '';
