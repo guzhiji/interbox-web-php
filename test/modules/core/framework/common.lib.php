@@ -8,7 +8,7 @@
  * views, with the cache module in the Core to help increase performance.
  * Note that the library is dependent on InterBox Core.
  * 
- * @version 0.9.20130719
+ * @version 0.9.20130721
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
@@ -34,10 +34,13 @@ function GetSysResPath($resname, $path) {
     $syspath = '';
     if (defined('IBC1_SYSTEM_ROOT'))
         $syspath = constant('IBC1_SYSTEM_ROOT');
-    $sysrespath = $path . '/' . $resname;
+    if (!empty($path))
+        $path .= '/';
+    $sysrespath = $path . $resname;
     if (is_file($syspath . $sysrespath))
         return $sysrespath;
-    return '';
+//    return '';
+    throw new Exception('path was not found: ' . $syspath . $sysrespath);
 }
 
 /**
@@ -69,7 +72,8 @@ function GetThemeResPath($resname, $restype, $themeid = NULL) {
         return $sysrespath;
 
     //not found
-    return '';
+    throw new Exception('path was not found: ' . $syspath . $sysrespath);
+//    return '';
 }
 
 /**
@@ -107,7 +111,8 @@ function GetCachePath($makedir = FALSE, $themeid = NULL, $lang = NULL) {
     }
 
     //not found
-    return '';
+    throw new Exception('path was not ' . ($makedir ? 'created' : 'found') . ': ' . $syspath . $cachepath);
+//    return '';
 }
 
 /**
