@@ -287,7 +287,7 @@ function queryString_Append($params) {
 /**
  * read a parameter from defined sources or a default value if missing
  * 
- * if {@code $types} is empty, treat {@code $key} as a global variable;
+ * if {@code $sources} is empty, treat {@code $key} as a global variable;
  * otherwise split it into an array of data sources by "|"
  * and value first found in the data sources will be returned.
  * Data sources:
@@ -306,22 +306,22 @@ function queryString_Append($params) {
  * $id=isset($_GET['id'])?$_GET['id']:(isset($_POST['id'])?$_POST['id']:NULL);
  * </code>
  * 
- * @param string $types     data sources
+ * @param string $sources     data sources
  * @param string $key       
  * @param mixed  $default   default value will be returned 
- *                          if {@code $key} is not found in all {@code $types} 
+ *                          if {@code $key} is not found in all {@code $sources} 
  * @return mixed
  */
-function readParam($types, $key, $default = '') {
-    if (empty($types)) {
+function readParam($sources, $key, $default = '') {
+    if (empty($sources)) {
         global $$key;
         if (isset($$key))
             $val = $$key; //a normal variable
         else
             $val = NULL;
-    }else {
+    } else {
         $val = NULL;
-        $typeArr = explode('|', $types);
+        $typeArr = explode('|', $sources);
         foreach ($typeArr as $type) {
             $t = strtoupper($type);
             switch ($t) {
@@ -350,4 +350,76 @@ function readParam($types, $key, $default = '') {
         }
     }
     return empty($val) ? $default : $val;
+}
+
+/**
+ * 
+ * <code>
+ * $meta = array(
+ *     'var' => array([source(s)], [default value], array(
+ *             'filter' => [filter function name],
+ *             'setter' => [setter method name of an object],
+ *             'field' => [field name of an object]
+ *         )
+ *     ),
+ * );
+ * </code>
+ */
+function readAllParams($meta, &$container = NULL) {
+
+    $vars = array();
+    foreach ($meta as $f => $m) {
+        $value = readParam($m[0], $f, $m[1]);
+
+        if (isset($m[2]['filter']))
+            $vars[$f] = $m[2]['filter']($value);
+        else
+            $vars[$f] = $value;
+
+        if ($container !== NULL)
+            setParam($container, $f, $m, $vars);
+    }
+    return $vars;
+}
+
+function setParam(&$container, $f, &$m, &$vars) {
+    if (is_array($container)) {
+        // the container is an array
+        if (isset($m[2]['field']))
+            $container[$m[2]['field']] = &$vars[$f];
+        else
+            $container[$f] = &$vars[$f];
+    } else {
+        // the container is an object
+        if (isset($m[2]['setter'])) {
+            // invoke setter method
+            if (method_exists($container, $m[2]['setter'])) {
+                if (isset($m[2]['field']))
+                    $container->$m[2]['setter']($m[2]['field'], $vars[$f]);
+                else
+                    $container->$m[2]['setter']($vars[$f]);
+            } else {
+                throw new Exception("The setter method \"{$m[2]['setter']}\" is not found");
+            }
+        } else if (isset($m[2]['field'])) {
+            // assign to the field
+            $container->{$m[2]['field']} = &$vars[$f];
+        }
+    }
+}
+
+function setAllParams(&$container, $fields, &$meta, &$vars, $optional_update = FALSE) {
+
+    foreach ($fields as $f) {
+
+        if (!isset($meta[$f]) || !isset($vars[$f]))
+            throw new Exception("missing required field \"$f\"");
+
+        // for optional update mode, empty values are treated as no change
+        if ($optional_update && empty($vars[$f]))
+            continue;
+
+        $m = $meta[$f];
+        setParam($container, $f, $m, $vars);
+    }
 }
