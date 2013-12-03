@@ -1,6 +1,6 @@
 <?php
 
-require 'modules/core/core1.lib.php';
+require 'core/core1.lib.php';
 require 'core.conf.php';
 LoadIBC1Lib('common', 'framework');
 require GetSysResPath('TestPage.class.php', 'modules/pages');
