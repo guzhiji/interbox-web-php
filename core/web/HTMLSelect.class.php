@@ -2,11 +2,12 @@
 
 /**
  * A tool for generating a select element for an HTML document dynamically .
+ * TODO the api looks old-fashioned; such helper utils currently are not focus
  * 
  * @version 0.2.20121123
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
- * @package interbox.core.framework
+ * @package interbox.core.web
  */
 class HTMLSelect {
 
