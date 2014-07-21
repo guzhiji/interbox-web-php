@@ -19,7 +19,7 @@ return array(
     'config_delete_fail' => 'Sorry, fail to delete this value.',
     'config_delete_confirm' => 'Are you sure to delete this value?',
     'theme_notfound' => 'Sorry, your theme does not exist.',
-    'theme_selected' => 'You theme is on!',
+    'theme_selected' => 'Your theme is on!',
     'lang_notfound' => 'Sorry, your language is not supported.',
     'lang_selected' => 'Welcome to the English version.'
 );
