@@ -1,6 +1,6 @@
 <?php
 
-LoadIBC1Class('ListModel', 'framework');
+LoadIBC1Class('ListModel', 'web');
 
 class CustomList extends ListModel {
 

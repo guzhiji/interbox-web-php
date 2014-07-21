@@ -6,7 +6,7 @@ class SaveConfig extends ProcessModel {
         $key = strPost('conf_key');
         $value = strPost('conf_value');
         try {
-            LoadIBC1Class('ConfigDataGroupEditor', 'framework');
+            LoadIBC1Class('ConfigDataGroupEditor', 'web');
             $editor = new ConfigDataGroupEditor();
             $editor->SetValue($key, $value);
             $editor->Persist();

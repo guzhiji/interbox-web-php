@@ -6,7 +6,7 @@ class DeleteConfig extends ProcessModel {
         $key = strGet('key');
         if (isset($_GET['confirmed'])) {
             try {
-                LoadIBC1Class('ConfigDataGroupEditor', 'framework');
+                LoadIBC1Class('ConfigDataGroupEditor', 'web');
                 $editor = new ConfigDataGroupEditor();
                 $editor->RemoveValue($key);
                 $editor->Persist();

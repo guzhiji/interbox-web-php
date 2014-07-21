@@ -2,7 +2,7 @@
 
 require 'core/core1.lib.php';
 require 'core.conf.php';
-LoadIBC1Lib('common', 'framework');
+LoadIBC1Lib('common', 'web');
 require GetSysResPath('TestPage.class.php', 'modules/pages');
 
 $p = new TestPage();

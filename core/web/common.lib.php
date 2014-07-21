@@ -12,7 +12,7 @@
  * @author Zhiji Gu <gu_zhiji@163.com>
  * @license MIT License
  * @copyright &copy; 2010-2013 InterBox Core 1.2 for PHP, GuZhiji Studio
- * @package interbox.core.framework
+ * @package interbox.core.web
  */
 //-----------------------------------------------------------
 // paths
