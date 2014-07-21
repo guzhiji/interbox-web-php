@@ -623,7 +623,7 @@ function ClearCache() {
 /**
  * a generic page model
  *
- * @version 0.14.20130719
+ * @version 0.15.20140628
  */
 abstract class PageModel extends BoxModel {
 
@@ -637,6 +637,7 @@ abstract class PageModel extends BoxModel {
     private $_jsfile = '';
     private $_icon = '';
     private $_boxes = array();
+    private $_routes = array();
 
     /**
      * constructor
@@ -650,6 +651,75 @@ abstract class PageModel extends BoxModel {
         $this->Before(NULL);
     }
 
+    /*
+     * TODO: manage sequence of boxes when being appended
+     */
+    private static function CopyConfigList(array &$base, array $r, $part, $override) {
+        if (isset($r[$part])) {
+            if (isset($base[$part])) {
+                foreach ($r[$part] as $key => $item) {
+                    if (is_string($key)) {
+                        // string key based
+                        if (isset($base[$part][$key])) {
+                            $bf = &$base[$part][$key];
+                            if (isset($bf[0]) && is_array($bf[0])) {
+                                // '[field name]' => array(...boxes...)
+                                // merge the two arrays of boxes
+                                $bf = array_merge($bf, $item);
+                                continue;
+                            } else if (!$override) // is_string($bf[0])
+                                // '[field name]' => box
+                                // but the box can't be overriden
+                                continue;
+                        } // otherwise, fill in the field
+                        $base[$part][$key] = $item;
+                    } else {
+                        // index based
+                        $base[$part][] = $item;
+                    }
+                }
+            } else
+                $base[$part] = $r[$part];
+        }
+    }
+
+    private static function CopyConfigItem(array &$base, array $r, $part, $override) {
+        if (isset($r[$part]))
+            if ($override || !isset($base[$part]))
+                $base[$part] = $r[$part];
+    }
+    
+    final public function AddRoute(array $route, $override = FALSE) {
+
+        self::CopyConfigList($this->_routes, $route, 'functions', $override);
+        self::CopyConfigList($this->_routes, $route, 'boxes', $override);
+        self::CopyConfigItem($this->_routes, $route, 'box', $override);
+
+        if (isset($route['modules'])) {
+            if (isset($this->_routes['modules'])) {
+                foreach ($route['modules'] as $m => $mconfig) {
+
+                    if (isset($this->_routes['modules'][$m])) {
+
+                        self::CopyConfigList(
+                            $this->_routes['modules'][$m],
+                            $mconfig, 'functions', $override);
+                        self::CopyConfigList(
+                            $this->_routes['modules'][$m],
+                            $mconfig, 'boxes', $override);
+                        self::CopyConfigItem(
+                            $this->_routes['modules'][$m],
+                            $mconfig, 'box', $override);
+
+                    } else
+                        $this->_routes['modules'][$m] = $mconfig;
+
+                }
+            } else
+                $this->_routes['modules'] = $route['modules'];
+        }
+    }
+    
     /**
      * invoke functions requested by the client and registered in the
      *  config parameter; add box views specified as default views in
@@ -727,8 +797,10 @@ abstract class PageModel extends BoxModel {
 
                 //a process should only run once
                 $this->CallProcess(
-                        $this->ConstructProcess($funconf[$function_name]), // construct an object of the Process
-                        $function_name, $module_name
+                    // construct an object of the Process
+                    self::ConstructProcess($funconf[$function_name]),
+                    $function_name,
+                    $module_name
                 );
 
                 return TRUE;
@@ -739,14 +811,38 @@ abstract class PageModel extends BoxModel {
         if (isset($config['box'])) {
 
             //a single box view
-            $this->AddBox($this->ConstructBox($config['box']), NULL, $module_name);
+            $this->AddBox(
+                self::ConstructBox($config['box']),
+                NULL,
+                $module_name
+            );
 
             return TRUE;
         } else if (isset($config['boxes'])) {
 
             //an array of boxes
-            foreach ($config['boxes'] as $f => $b)
-                $this->AddBox($this->ConstructBox($b), is_string($f) ? $f : NULL, $module_name);
+            foreach ($config['boxes'] as $f => $b) {
+                
+                if (!isset($b[0]))
+                    continue;
+                
+                if (is_string($b[0])) {
+                    $this->AddBox(
+                        self::ConstructBox($b),
+                        is_string($f) ? $f : NULL,
+                        $module_name
+                    );
+                } else if (is_array($b[0])) {
+                    foreach ($b as $bb) {
+                        $this->AddBox(
+                            self::ConstructBox($bb),
+                            is_string($f) ? $f : NULL,
+                            $module_name
+                        );
+                    }
+                }
+
+            }
 
             return TRUE;
         }
@@ -755,12 +851,12 @@ abstract class PageModel extends BoxModel {
         return FALSE;
     }
 
-    private function ConstructBox(array $box) {
+    private static function ConstructBox(array $box) {
         require_once GetSysResPath($box[0] . '.class.php', 'modules/boxes');
         return new $box[0]($box[1]);
     }
 
-    private function ConstructProcess(array $proc) {
+    private static function ConstructProcess(array $proc) {
         require GetSysResPath($proc[0] . '.class.php', 'modules/processes');
         return new $proc[0]($proc[1]);
     }
@@ -916,7 +1012,7 @@ abstract class PageModel extends BoxModel {
      * @param string $js
      */
     public function AppendJS($js) {
-        $this->_js.=$js;
+        $this->_js .= $js;
     }
 
     /**
@@ -1001,6 +1097,10 @@ abstract class PageModel extends BoxModel {
     }
 
     final public function GetHTML() {
+        
+        // TODO: cache routes
+        $this->Route($this->_routes);
+        
         //head BEGIN
         $head = '';
         //icon
@@ -1024,6 +1124,7 @@ abstract class PageModel extends BoxModel {
         //meta
         $head.=$this->_meta;
         //head END
+        
         //output
         $this->SetField('Keywords', $this->_keywords);
         $this->SetField('Description', $this->_description);
