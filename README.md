@@ -62,5 +62,140 @@ Caching is off.
 
 ##The Box!
 
+###Page is a box
+
+A page is the top level container which is essentially a box as well. However, a page does have something different. For example, the Route() method is able to route a request to a module and render it's view/boxes.
+
+A module consists of a set of boxes (view) and a set of processes (business logic). A page has its default module and a module has its default view.
+
+The default module is at the top level, where we can directly define the default view in the attribute "box" or "boxes".
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'box' => array('WelcomeBox', NULL)
+));
+$p->Show();
+'''
+
+Or
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'boxes' => array(
+        array('WelcomeBox', NULL),
+        array('MenuBox', NULL)
+    )
+));
+$p->Show();
+'''
+
+If more modules are needed, we can specify them in an attribute called "modules":
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'box' => array('WelcomeBox', NULL),
+    'modules' => array(
+        'configuration' => array(
+            'box' => array('ConfigBox', NULL)
+        )
+    )
+));
+$p->Show();
+'''
+
+So, we can access the box "WelcomeBox" (the default module) at / and the box "ConfigBox" (the module "configuration") at /configuration/.
+
+If there're some nesting modules, we prefer:
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'box' => array('WelcomeBox', NULL),
+    'modules' => array(
+        'configuration' => array(
+            'box' => array('ConfigBox', NULL)
+        ),
+        'configuration/layout' => array(
+            'box' => array('ConfigLayoutBox', NULL)
+        )
+    )
+));
+$p->Show();
+'''
+
+So it looks less complicated.
+
+
+###Organize
+
+For example, we have such a page with 3 columns, but there's nothing in the left one:
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'boxes' => array(
+        array('MainColBox1', NULL),
+        array('MainColBox2', NULL),
+        'right_col' => array(
+            array('RightColBox1', NULL),
+            array('RightColBox2', NULL)
+        ),
+        'left_col' => array()
+    )
+));
+$p->Show();
+'''
+
+Now, we can change its configuration:
+-change box order in the main column
+-move one box from right column to left
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'boxes' => array(
+        array('MainColBox2', NULL),
+        array('MainColBox1', NULL),
+        'right_col' => array(
+            array('RightColBox1', NULL)
+        ),
+        'left_col' => array(
+            array('RightColBox2', NULL)
+        )
+    )
+));
+$p->Show();
+'''
+
+Or even simplified:
+
+'''php
+$p = new TestPage();
+$p->Route(array(
+    'boxes' => array(
+        array('MainColBox2', NULL),
+        array('MainColBox1', NULL),
+        'right_col' => array('RightColBox1', NULL),
+        'left_col' => array('RightColBox2', NULL)
+    )
+));
+$p->Show();
+'''
+
+###Redirect
+
+Apart from the traditional way of redirecting a request to another URL, we're talking about redirecting a single box.
+
+
+
+###Theme
+
+
+###Cache
+
+
 TODO ...
 
