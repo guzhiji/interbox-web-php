@@ -70,17 +70,17 @@ A module consists of a set of boxes (view) and a set of processes (business logi
 
 The default module is at the top level, where we can directly define the default view in the attribute "box" or "boxes".
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'box' => array('WelcomeBox', NULL)
 ));
 $p->Show();
-'''
+```
 
 Or
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'boxes' => array(
@@ -89,11 +89,11 @@ $p->Route(array(
     )
 ));
 $p->Show();
-'''
+```
 
 If more modules are needed, we can specify them in an attribute called "modules":
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'box' => array('WelcomeBox', NULL),
@@ -104,13 +104,13 @@ $p->Route(array(
     )
 ));
 $p->Show();
-'''
+```
 
 So, we can access the box "WelcomeBox" (the default module) at / and the box "ConfigBox" (the module "configuration") at /configuration/.
 
 If there're some nesting modules, we prefer:
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'box' => array('WelcomeBox', NULL),
@@ -124,7 +124,7 @@ $p->Route(array(
     )
 ));
 $p->Show();
-'''
+```
 
 So it looks less complicated.
 
@@ -133,7 +133,7 @@ So it looks less complicated.
 
 For example, we have such a page with 3 columns, but there's nothing in the left one:
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'boxes' => array(
@@ -147,13 +147,13 @@ $p->Route(array(
     )
 ));
 $p->Show();
-'''
+```
 
 Now, we can change its configuration:
 -change box order in the main column
 -move one box from right column to left
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'boxes' => array(
@@ -168,11 +168,11 @@ $p->Route(array(
     )
 ));
 $p->Show();
-'''
+```
 
 Or even simplified:
 
-'''php
+```php
 $p = new TestPage();
 $p->Route(array(
     'boxes' => array(
@@ -183,7 +183,7 @@ $p->Route(array(
     )
 ));
 $p->Show();
-'''
+```
 
 ###Redirect
 
