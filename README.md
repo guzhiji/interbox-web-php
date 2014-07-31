@@ -232,12 +232,45 @@ TODO ...
 
 ##The Process
 
-It's simple. It just means do something but everything happening here should be completely outside the logics dealing with the views!
+###Overview
+
+It's simple. It just means to do something, but everything happening here should be completely outside the logics dealing with the views!
 
 There can be some ways of output.
 * a box!
 * some data: json, xml, binary... (needs improving)
 * TODO: location header (I forgot)
+
+###Organize
+
+Similarly, processes can be easily plugged into modules.
+
+```php
+$p = new TestPage();
+$p->Route(array(
+    'box' => array('WelcomeBox', NULL),
+    'functions' => array(
+        'setlang' => array('SetLang', NULL)
+    ),
+    'modules' => array(
+        'configuration' => array(
+            'box' => array('ConfigBox', NULL),
+            'functions' => array(
+                'save' => array('SaveConfig', NULL)
+            )
+        )
+    )
+));
+$p->Show();
+```
+
+###Output a Box
+
+
+###Output JSON Data
+
+
+
 
 ##TODO: utility extensions
 
