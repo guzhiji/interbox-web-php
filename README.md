@@ -62,7 +62,7 @@ Caching is off.
 
 ##The Box!
 
-###Page is a box
+###Page is box
 
 A page is the top level container which is essentially a box as well. However, a page does have something different. For example, the Route() method is able to route a request to a module and render it's view/boxes.
 
@@ -126,7 +126,7 @@ $p->Route(array(
 $p->Show();
 ```
 
-So it looks less complicated.
+There're fewer nested arrays, so it looks less complicated.
 
 
 ###Organize
@@ -150,8 +150,8 @@ $p->Show();
 ```
 
 Now, we can change its configuration:
--change box order in the main column
--move one box from right column to left
+* change box order in the main column
+* move one box from right column to left
 
 ```php
 $p = new TestPage();
@@ -185,17 +185,60 @@ $p->Route(array(
 $p->Show();
 ```
 
-###Redirect
+###Templates
 
-Apart from the traditional way of redirecting a request to another URL, we're talking about redirecting a single box.
+TODO ...
+template engines: `TransformTpl`, `RenderPHPTpl` (changing)
+template files: grouped by classname, but classname can be specified `parent::__construct(__CLASS__)`
+auto formatting: type declaration prefix with underscope
 
+###Arguments
 
+TODO ...
 
-###Theme
+###Output Status
+
+Each box has its status that indicates its behaviour when loading content.
+
+* Normal status
+* Hidden status
+* Forward status
+* UseCache status
+
+Essentially, content is loaded either successfully or unsuccessfully. So normal is normal, otherwise a box may express its special status according to its needs.
+
+For example, if there's no result to be displayed, a box can simply escape from the world or redirect to another box showing something different.
+
+And from my personal experience using free web hosting providers, their database servers can be very unstable since they are more susceptible to hackers. However PHP often hide the fact that database fails to connect. It showed nothing but it wasn't that case at all. To make it less frustrating in such situations, the UseCache status becomes extremely helpful.
+
+What's behind the scene is the `AddBox()` method. It first calls `BoxModel::Before($page)` to run some preliminary code so as to test whether it needs to load content at all. Either after `BoxModel::Before($page)` or `BoxModel::LoadContent()`, the parent reads the box's status in order to deal with its special behviours such as performing 'forward'. (still under review)
+
+To change status of a box, there are methods provided:
+
+* `BoxModel::Hide()`
+* `BoxModel::Forward($box, $params)`
+* `BoxModel::UseCache()`
+* or, call nothing so it's normal
 
 
 ###Cache
 
 
+
 TODO ...
 
+
+###Localization
+
+##The Process
+
+It's simple. It just means do something but everything happening here should be completely outside the logics dealing with the views!
+
+There can be some ways of output.
+* a box!
+* some data: json, xml, binary... (needs improving)
+* TODO: location header (I forgot)
+
+##TODO: utility extensions
+
+Currently, some designs even don't look good to me. Well, keep hard-working!
